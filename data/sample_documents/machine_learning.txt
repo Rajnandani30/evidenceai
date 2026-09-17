@@ -1,0 +1,13 @@
+Machine Learning Fundamentals
+
+Machine Learning (ML) is a branch of Artificial Intelligence that enables computers to learn patterns from data and make predictions or decisions without being explicitly programmed for every individual task.
+
+Supervised Learning uses labeled data to train a model. Common supervised learning tasks include classification and regression.
+
+Unsupervised Learning uses data without labeled outputs. Clustering and dimensionality reduction are common examples.
+
+Reinforcement Learning involves an agent learning by interacting with an environment. The agent receives rewards or penalties based on its actions.
+
+A machine learning workflow commonly includes collecting data, cleaning data, selecting features, training a model, evaluating its performance, and deploying the model.
+
+Common machine learning applications include spam detection, customer segmentation, recommendation systems, demand forecasting, and predictive maintenance.

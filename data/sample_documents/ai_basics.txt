@@ -1,0 +1,13 @@
+Artificial Intelligence Basics
+
+Artificial Intelligence (AI) is a field of computer science focused on creating systems that can perform tasks that normally require human intelligence.
+
+Common AI tasks include learning, reasoning, problem-solving, understanding language, recognizing images, and making decisions.
+
+Machine Learning is a subfield of Artificial Intelligence. It allows computers to learn patterns from data instead of being explicitly programmed for every task.
+
+Deep Learning is a subfield of Machine Learning that uses neural networks with multiple layers to learn complex patterns from large amounts of data.
+
+Natural Language Processing (NLP) is a field of AI that enables computers to understand, process, and generate human language.
+
+Examples of AI applications include recommendation systems, virtual assistants, fraud detection, medical image analysis, and autonomous vehicles.
