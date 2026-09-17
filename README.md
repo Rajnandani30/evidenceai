@@ -41,6 +41,3 @@ The project combines:
 * FastAPI or Flask
 * React or Streamlit
 
-## Author
-
-Rajnandani Shinde
