@@ -1,0 +1,56 @@
+# Python
+
+**pycache**/
+*.py[cod]
+*.pyo
+*.pyd
+
+# Virtual environment
+
+.venv/
+venv/
+env/
+
+# Environment variables and secrets
+
+.env
+
+# Vector databases and generated indexes
+
+chroma_db/
+vector_store/
+*.faiss
+*.pkl
+*.pickle
+
+# Generated files
+
+uploads/
+outputs/
+logs/
+
+# Jupyter Notebook
+
+.ipynb_checkpoints/
+
+# IDE files
+
+.vscode/
+.idea/
+
+# Operating system files
+
+.DS_Store
+Thumbs.db
+
+# Python testing and coverage
+
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Build files
+
+dist/
+build/
+*.egg-info/

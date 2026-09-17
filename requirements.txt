@@ -1,0 +1,27 @@
+# Backend
+
+fastapi
+uvicorn
+
+# Document processing
+
+pypdf
+python-dotenv
+
+# Machine learning and embeddings
+
+sentence-transformers
+
+# Retrieval
+
+rank-bm25
+faiss-cpu
+
+# Data processing
+
+numpy
+pandas
+
+# API and file handling
+
+python-multipart
