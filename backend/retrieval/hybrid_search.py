@@ -3,6 +3,7 @@ from backend.retrieval.bm25_search import BM25Search
 from backend.retrieval.embeddings import generate_embeddings
 from backend.retrieval.vector_store import VectorStore
 from backend.retrieval.scoring import normalize_scores
+from backend.retrieval.reranker import rerank
 
 
 class HybridSearch:
@@ -55,7 +56,7 @@ class HybridSearch:
             reverse=True
         )
 
-        # Create score lookup dictionaries
+        # Create score lookups
         bm25_lookup = {}
 
         for result, score in zip(
@@ -101,7 +102,16 @@ class HybridSearch:
             reverse=True
         )
 
-        return hybrid_results[:top_k]
+        # Take top candidates for reranking
+        candidates = hybrid_results[:top_k]
+
+        # Cross-Encoder reranking
+        reranked_results = rerank(
+            query,
+            candidates
+        )
+
+        return reranked_results
 
 
 if __name__ == "__main__":
@@ -114,10 +124,10 @@ if __name__ == "__main__":
         top_k=2
     )
 
-    print("\n=== HYBRID SEARCH RESULTS ===")
+    print("\n=== FINAL RERANKED RESULTS ===")
 
     for result in results:
         print("\nFile:", result["file_name"])
-        print("BM25 Score:", result["bm25_score"])
-        print("Vector Score:", result["vector_score"])
         print("Hybrid Score:", result["hybrid_score"])
+        print("Rerank Score:", result["rerank_score"])
+        print("Text:", result["text"])
