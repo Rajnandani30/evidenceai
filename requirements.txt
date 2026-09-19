@@ -25,3 +25,4 @@ pandas
 # API and file handling
 
 python-multipart
+google-genai
