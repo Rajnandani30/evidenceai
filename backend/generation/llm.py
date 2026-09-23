@@ -2,6 +2,7 @@ import os
 
 from dotenv import load_dotenv
 from google import genai
+
 from backend.generation.prompt_builder import build_rag_prompt
 from backend.verification.citation_verifier import verify_citations
 
@@ -14,19 +15,40 @@ client = genai.Client(
 )
 
 
-MODEL_NAME = "gemini-3.6-flash"
+MODEL_NAME = "gemini-3.8-flash"
+
+
 def generate_answer(query, documents):
+
     prompt = build_rag_prompt(
         query,
         documents
     )
 
-    response = client.models.generate_content(
-        model=MODEL_NAME,
-        contents=prompt
-    )
+    try:
 
-    answer = response.text
+        response = client.models.generate_content(
+            model=MODEL_NAME,
+            contents=prompt
+        )
+
+        answer = response.text
+
+    except Exception as error:
+
+        error_message = str(error)
+
+        if "503" in error_message:
+
+            answer = (
+                "Gemini is temporarily unavailable because "
+                "the model is experiencing high demand. "
+                "Please try again later."
+            )
+
+        else:
+
+            raise
 
     verified_sources = verify_citations(
         answer,
@@ -37,26 +59,33 @@ def generate_answer(query, documents):
 
 
 if __name__ == "__main__":
+
     sample_documents = [
         {
             "file_name": "machine_learning.txt",
-            "text": "Machine Learning allows computers to learn patterns from data."
+            "text": (
+                "Machine Learning allows computers "
+                "to learn patterns from data."
+            )
         },
         {
             "file_name": "ai_basics.txt",
-            "text": "Artificial Intelligence is a field of computer science."
+            "text": (
+                "Artificial Intelligence is a field "
+                "of computer science."
+            )
         },
     ]
 
     answer, verified_sources = generate_answer(
-    "What is Machine Learning?",
-    sample_documents
-)
+        "What is Machine Learning?",
+        sample_documents
+    )
 
-print("EvidenceAI Answer:")
-print(answer)
+    print("EvidenceAI Answer:")
+    print(answer)
 
-print("\nVerified Sources:")
+    print("\nVerified Sources:")
 
-for source in verified_sources:
-    print("-", source)
+    for source in verified_sources:
+        print("-", source)
