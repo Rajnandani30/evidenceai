@@ -15,7 +15,7 @@ client = genai.Client(
 )
 
 
-MODEL_NAME = "gemini-3.8-flash"
+MODEL_NAME = "gemini-flash-lite-latest"
 
 
 def generate_answer(query, documents):

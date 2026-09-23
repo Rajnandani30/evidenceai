@@ -5,7 +5,8 @@ def verify_citations(answer, documents):
 
     verified_sources = []
 
-    # Find citations such as:
+    # Supports citations like:
+    # [Source 1: sample, Page 2]
     # [Source 1: sample.pdf, Page 2]
     citation_pattern = re.compile(
         r"\[Source\s+(\d+):\s*([^,\]]+)"
@@ -14,7 +15,7 @@ def verify_citations(answer, documents):
 
     citations = citation_pattern.findall(answer)
 
-    for source_number, file_name, page_number in citations:
+    for source_number, source_name, page_number in citations:
 
         source_index = int(source_number) - 1
 
@@ -27,11 +28,29 @@ def verify_citations(answer, documents):
 
         document = documents[source_index]
 
-        # Check filename
-        if document["file_name"].lower() != file_name.strip().lower():
+        expected_file = document.get(
+            "file_name",
+            ""
+        ).strip().lower()
+
+        expected_title = document.get(
+            "title",
+            ""
+        ).strip().lower()
+
+        cited_name = source_name.strip().lower()
+
+        # Accept either PDF title or filename
+        valid_source_name = (
+            cited_name == expected_title
+            or cited_name == expected_file
+            or cited_name == expected_file.removesuffix(".pdf")
+        )
+
+        if not valid_source_name:
             continue
 
-        # Check page number for PDF documents
+        # Check page number
         if page_number:
 
             document_page = document.get(
@@ -44,9 +63,13 @@ def verify_citations(answer, documents):
             if document_page != int(page_number):
                 continue
 
-        source_text = document["text"].lower()
+        # Evidence-support check
+        source_text = document.get(
+            "text",
+            ""
+        ).lower()
 
-        # Remove the citation itself from the answer
+        # Remove citations from the answer
         answer_without_citation = re.sub(
             r"\[Source\s+\d+:[^\]]+\]",
             "",
@@ -80,7 +103,13 @@ def verify_citations(answer, documents):
                 "file_name": document["file_name"]
             }
 
-            if "page_number" in document:
+            if document.get("title"):
+
+                verified_source["title"] = (
+                    document["title"]
+                )
+
+            if document.get("page_number") is not None:
 
                 verified_source["page_number"] = (
                     document["page_number"]

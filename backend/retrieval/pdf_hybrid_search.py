@@ -12,10 +12,16 @@ class PDFHybridSearch:
 
         self.chunks = chunks
 
-        # BM25 search
+        # -------------------------
+        # BM25 Search
+        # -------------------------
+
         self.bm25_search = PDFBM25Search(chunks)
 
-        # Vector search
+        # -------------------------
+        # Vector Search
+        # -------------------------
+
         texts = [
             chunk["text"]
             for chunk in chunks
@@ -27,9 +33,16 @@ class PDFHybridSearch:
             dimension=embeddings.shape[1]
         )
 
-        self.vector_store.add_embeddings(embeddings)
+        self.vector_store.add_embeddings(
+            embeddings
+        )
 
-    def search(self, query, top_k=5, bm25_weight=0.5):
+    def search(
+        self,
+        query,
+        top_k=5,
+        bm25_weight=0.5
+    ):
 
         # -------------------------
         # BM25 Search
@@ -95,7 +108,9 @@ class PDFHybridSearch:
 
         hybrid_results = []
 
-        for index in range(len(self.chunks)):
+        for index in range(
+            len(self.chunks)
+        ):
 
             bm25_score = bm25_lookup.get(
                 index,
@@ -110,15 +125,25 @@ class PDFHybridSearch:
             hybrid_score = (
                 bm25_weight * bm25_score
                 +
-                (1 - bm25_weight) * vector_score
+                (1 - bm25_weight)
+                * vector_score
             )
 
             hybrid_results.append(
                 {
                     "index": index,
+
+                    # PDF metadata
+                    "title": self.chunks[index]["title"],
+                    "author": self.chunks[index]["author"],
                     "file_name": self.chunks[index]["file_name"],
                     "page_number": self.chunks[index]["page_number"],
+                    "source": self.chunks[index]["source"],
+
+                    # Evidence text
                     "text": self.chunks[index]["text"],
+
+                    # Retrieval scores
                     "bm25_score": bm25_score,
                     "vector_score": vector_score,
                     "hybrid_score": hybrid_score,
@@ -126,7 +151,8 @@ class PDFHybridSearch:
             )
 
         hybrid_results.sort(
-            key=lambda result: result["hybrid_score"],
+            key=lambda result:
+                result["hybrid_score"],
             reverse=True
         )
 
@@ -148,7 +174,9 @@ if __name__ == "__main__":
 
     pdf_path = "data/pdf_documents/sample.pdf"
 
-    chunks = ingest_pdf(pdf_path)
+    chunks = ingest_pdf(
+        pdf_path
+    )
 
     search_engine = PDFHybridSearch(
         chunks
@@ -159,30 +187,49 @@ if __name__ == "__main__":
         top_k=5
     )
 
-    print("PDF HYBRID SEARCH + RERANKING RESULTS:")
+    print(
+        "PDF HYBRID SEARCH + RERANKING RESULTS:"
+    )
 
     for result in results:
 
         print(
-            f"\nPage: {result['page_number']}"
+            f"\nTitle: {result['title']}"
         )
 
         print(
-            f"BM25 Score: {result['bm25_score']:.4f}"
+            f"Author: {result['author']}"
         )
 
         print(
-            f"Vector Score: {result['vector_score']:.4f}"
+            f"Page: {result['page_number']}"
         )
 
         print(
-            f"Hybrid Score: {result['hybrid_score']:.4f}"
+            f"Source: {result['source']}"
         )
 
         print(
-            f"Rerank Score: {result['rerank_score']:.4f}"
+            f"BM25 Score: "
+            f"{result['bm25_score']:.4f}"
         )
 
         print(
-            f"Text: {result['text'][:250]}..."
+            f"Vector Score: "
+            f"{result['vector_score']:.4f}"
+        )
+
+        print(
+            f"Hybrid Score: "
+            f"{result['hybrid_score']:.4f}"
+        )
+
+        print(
+            f"Rerank Score: "
+            f"{result['rerank_score']:.4f}"
+        )
+
+        print(
+            f"Text: "
+            f"{result['text'][:250]}..."
         )
