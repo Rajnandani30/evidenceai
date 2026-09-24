@@ -1,0 +1,148 @@
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: Arial, Helvetica, sans-serif;
+  background: #0b1020;
+  color: #f5f7ff;
+}
+
+.app {
+  min-height: 100vh;
+}
+
+.header {
+  padding: 28px 8%;
+  border-bottom: 1px solid #252b42;
+  background: #10172a;
+}
+
+.header h1 {
+  margin: 0;
+  font-size: 36px;
+  color: #7c9cff;
+}
+
+.header p {
+  margin: 6px 0 0;
+  color: #9da7c0;
+}
+
+.container {
+  width: 90%;
+  max-width: 1000px;
+  margin: 0 auto;
+  padding: 50px 0;
+}
+
+.hero {
+  text-align: center;
+  margin-bottom: 40px;
+}
+
+.hero h2 {
+  font-size: 42px;
+  margin-bottom: 15px;
+}
+
+.hero p {
+  max-width: 700px;
+  margin: auto;
+  color: #aeb7ce;
+  line-height: 1.7;
+  font-size: 17px;
+}
+
+.question-card,
+.answer-card,
+.sources-card {
+  background: #11182b;
+  border: 1px solid #29324d;
+  border-radius: 16px;
+  padding: 28px;
+  margin-bottom: 25px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
+}
+
+.question-card label {
+  display: block;
+  font-size: 18px;
+  font-weight: bold;
+  margin-bottom: 12px;
+}
+
+textarea {
+  width: 100%;
+  min-height: 130px;
+  resize: vertical;
+  padding: 16px;
+  border-radius: 10px;
+  border: 1px solid #39435f;
+  background: #0b1020;
+  color: white;
+  font-size: 16px;
+  outline: none;
+}
+
+textarea:focus {
+  border-color: #7c9cff;
+}
+
+button {
+  margin-top: 16px;
+  padding: 13px 24px;
+  border: none;
+  border-radius: 10px;
+  background: #6d7cff;
+  color: white;
+  font-size: 16px;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+button:hover {
+  background: #5868ed;
+}
+
+button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.answer-card h2,
+.sources-card h2 {
+  margin-top: 0;
+}
+
+.answer {
+  white-space: pre-wrap;
+  line-height: 1.8;
+  color: #dce2f2;
+  font-size: 16px;
+}
+
+.source {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 16px;
+  margin-top: 12px;
+  border-radius: 10px;
+  background: #0b1020;
+  border: 1px solid #29324d;
+}
+
+.source strong {
+  color: #ffffff;
+}
+
+.source span {
+  color: #7c9cff;
+  font-weight: bold;
+}
+
+.source small {
+  color: #8e98b0;
+}
