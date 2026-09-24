@@ -1,3 +1,4 @@
+
 from pathlib import Path
 
 from pypdf import PdfReader
@@ -11,12 +12,30 @@ def load_pdf(file_path):
 
     pages = []
 
-    # Basic document metadata
+    # Read PDF metadata
     metadata = reader.metadata or {}
 
-    title = metadata.get("/Title") or pdf_path.stem
-    author = metadata.get("/Author") or "Unknown"
+    # Get title and remove invalid metadata
+    title = metadata.get("/Title")
 
+    if not title or title.strip().lower() in [
+        "(anonymous)",
+        "anonymous",
+        "untitled",
+    ]:
+        title = pdf_path.stem
+
+    # Get author and remove invalid metadata
+    author = metadata.get("/Author")
+
+    if not author or author.strip().lower() in [
+        "(anonymous)",
+        "anonymous",
+        "unknown",
+    ]:
+        author = "Unknown"
+
+    # Extract text from every page
     for page_number, page in enumerate(
         reader.pages,
         start=1
@@ -40,7 +59,7 @@ def load_pdf(file_path):
 
 if __name__ == "__main__":
 
-    pdf_path = "data/pdf_documents/sample.pdf"
+    pdf_path = "data/pdf_documents/second.pdf"
 
     pages = load_pdf(pdf_path)
 
