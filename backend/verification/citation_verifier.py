@@ -8,6 +8,7 @@ def verify_citations(answer, documents):
     # Supports citations like:
     # [Source 1: sample, Page 2]
     # [Source 1: sample.pdf, Page 2]
+
     citation_pattern = re.compile(
         r"\[Source\s+(\d+):\s*([^,\]]+)"
         r"(?:,\s*Page\s+(\d+))?\]"
@@ -115,8 +116,11 @@ def verify_citations(answer, documents):
                     document["page_number"]
                 )
 
-            verified_sources.append(
-                verified_source
-            )
+            # Prevent duplicate verified sources
+            if verified_source not in verified_sources:
+
+                verified_sources.append(
+                    verified_source
+                )
 
     return verified_sources
