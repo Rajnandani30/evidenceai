@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import "./App.css";
 
@@ -6,6 +7,35 @@ function App() {
   const [answer, setAnswer] = useState("");
   const [sources, setSources] = useState([]);
   const [loading, setLoading] = useState(false);
+
+  // Format answer text into readable bullet points
+  const formatAnswer = (text) => {
+    if (!text) return null;
+
+    // Remove literal escaped asterisks and clean up whitespace
+    const cleanedText = text
+      .replace(/\\\*/g, "*")
+      .trim();
+
+    // Split the answer into separate lines
+    const lines = cleanedText
+      .split(/\n|(?=\s*\*\s)/)
+      .map((line) => line.replace(/^\s*\*\s*/, "").trim())
+      .filter(Boolean);
+
+    // Display as bullet points when the answer contains multiple items
+    if (lines.length > 1) {
+      return (
+        <ul className="answer-list">
+          {lines.map((line, index) => (
+            <li key={index}>{line}</li>
+          ))}
+        </ul>
+      );
+    }
+
+    return <p>{cleanedText}</p>;
+  };
 
   const askQuestion = async () => {
     if (!question.trim()) return;
@@ -25,17 +55,21 @@ function App() {
         }),
       });
 
+      if (!response.ok) {
+        throw new Error("Failed to get an answer from the backend.");
+      }
+
       const data = await response.json();
 
-      setAnswer(data.answer);
+      setAnswer(data.answer || "No answer was generated.");
       setSources(data.verified_sources || []);
     } catch (error) {
       setAnswer(
         "Unable to connect to EvidenceAI backend. Make sure the FastAPI server is running."
       );
+    } finally {
+      setLoading(false);
     }
-
-    setLoading(false);
   };
 
   return (
@@ -57,9 +91,10 @@ function App() {
         </section>
 
         <section className="question-card">
-          <label>Ask your question</label>
+          <label htmlFor="question-input">Ask your question</label>
 
           <textarea
+            id="question-input"
             value={question}
             onChange={(event) => setQuestion(event.target.value)}
             placeholder="Example: What is Retrieval Augmented Generation (RAG)?"
@@ -75,7 +110,7 @@ function App() {
             <h2>Answer</h2>
 
             <div className="answer">
-              {answer}
+              {formatAnswer(answer)}
             </div>
           </section>
         )}
@@ -87,16 +122,18 @@ function App() {
             {sources.map((source, index) => (
               <div className="source" key={index}>
                 <strong>
-                  {source.title || source.file_name}
+                  {source.title || source.file_name || "Document"}
                 </strong>
 
                 {source.page_number && (
-                  <span>
+                  <span className="source-page">
                     Page {source.page_number}
                   </span>
                 )}
 
-                <small>{source.file_name}</small>
+                <small className="source-file">
+                  {source.file_name}
+                </small>
               </div>
             ))}
           </section>

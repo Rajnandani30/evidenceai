@@ -116,11 +116,38 @@ button:disabled {
   margin-top: 0;
 }
 
+/* Answer section */
+.answer-card {
+  text-align: center;
+}
+
 .answer {
+  text-align: left;
   white-space: pre-wrap;
   line-height: 1.8;
   color: #dce2f2;
   font-size: 16px;
+  max-width: 850px;
+  margin: 0 auto;
+}
+
+/* Answer bullet points */
+.answer-list {
+  text-align: left;
+  list-style-type: disc;
+  padding-left: 28px;
+  margin: 15px 0;
+}
+
+.answer-list li {
+  padding-left: 6px;
+  margin-bottom: 10px;
+  line-height: 1.8;
+}
+
+/* Keep answer heading centered */
+.answer-card h2 {
+  text-align: center;
 }
 
 .source {
