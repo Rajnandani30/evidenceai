@@ -173,3 +173,76 @@ button:disabled {
 .source small {
   color: #8e98b0;
 }
+
+
+/* PDF Upload Section */
+.upload-card {
+  background: #11182b;
+  border: 1px solid #29324d;
+  border-radius: 16px;
+  padding: 28px;
+  margin-bottom: 25px;
+  text-align: center;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
+}
+
+.upload-card h2 {
+  margin-top: 0;
+  color: #7c9cff;
+  font-size: 24px;
+}
+
+.upload-card p {
+  color: #aeb7ce;
+  line-height: 1.6;
+}
+
+.upload-card input[type="file"] {
+  display: block;
+  width: 100%;
+  margin-top: 20px;
+  padding: 14px;
+  border: 1px dashed #39435f;
+  border-radius: 10px;
+  background: #0b1020;
+  color: #dce2f2;
+  cursor: pointer;
+}
+
+.upload-card input[type="file"]::file-selector-button {
+  padding: 10px 16px;
+  margin-right: 14px;
+  border: none;
+  border-radius: 8px;
+  background: #29324d;
+  color: white;
+  cursor: pointer;
+}
+
+.upload-card input[type="file"]::file-selector-button:hover {
+  background: #39435f;
+}
+
+.selected-file {
+  font-size: 14px;
+  overflow-wrap: anywhere;
+}
+
+.upload-message {
+  margin-top: 18px;
+  padding: 14px;
+  border-radius: 10px;
+  overflow-wrap: anywhere;
+}
+
+.upload-message.success {
+  color: #86efac;
+  background: rgba(34, 197, 94, 0.1);
+  border: 1px solid rgba(34, 197, 94, 0.3);
+}
+
+.upload-message.error {
+  color: #fca5a5;
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+}

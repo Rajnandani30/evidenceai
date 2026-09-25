@@ -8,22 +8,24 @@ function App() {
   const [sources, setSources] = useState([]);
   const [loading, setLoading] = useState(false);
 
-  // Format answer text into readable bullet points
+  const [selectedFile, setSelectedFile] = useState(null);
+  const [uploading, setUploading] = useState(false);
+  const [uploadMessage, setUploadMessage] = useState("");
+  const [uploadError, setUploadError] = useState(false);
+
+  // Format answer into readable bullet points
   const formatAnswer = (text) => {
     if (!text) return null;
 
-    // Remove literal escaped asterisks and clean up whitespace
     const cleanedText = text
       .replace(/\\\*/g, "*")
       .trim();
 
-    // Split the answer into separate lines
     const lines = cleanedText
       .split(/\n|(?=\s*\*\s)/)
       .map((line) => line.replace(/^\s*\*\s*/, "").trim())
       .filter(Boolean);
 
-    // Display as bullet points when the answer contains multiple items
     if (lines.length > 1) {
       return (
         <ul className="answer-list">
@@ -37,6 +39,7 @@ function App() {
     return <p>{cleanedText}</p>;
   };
 
+  // Ask EvidenceAI
   const askQuestion = async () => {
     if (!question.trim()) return;
 
@@ -56,7 +59,7 @@ function App() {
       });
 
       if (!response.ok) {
-        throw new Error("Failed to get an answer from the backend.");
+        throw new Error("Failed to get an answer.");
       }
 
       const data = await response.json();
@@ -69,6 +72,59 @@ function App() {
       );
     } finally {
       setLoading(false);
+    }
+  };
+
+  // Upload PDF to backend
+  const uploadPDF = async () => {
+    if (!selectedFile) {
+      setUploadMessage("Please select a PDF file first.");
+      setUploadError(true);
+      return;
+    }
+
+    setUploading(true);
+    setUploadMessage("");
+    setUploadError(false);
+
+    try {
+      const formData = new FormData();
+      formData.append("file", selectedFile);
+
+      const response = await fetch(
+        "http://127.0.0.1:8000/upload",
+        {
+          method: "POST",
+          body: formData,
+        }
+      );
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(
+          data.detail || "PDF upload failed."
+        );
+      }
+
+      setUploadMessage(
+        `${data.message} ${data.file_name} — ${data.pages_processed} pages processed, ${data.chunks_created} chunks created.`
+      );
+
+      setSelectedFile(null);
+
+      // Clear the file input after successful upload
+      const fileInput = document.getElementById("pdf-upload");
+      if (fileInput) {
+        fileInput.value = "";
+      }
+    } catch (error) {
+      setUploadMessage(
+        error.message || "Unable to upload PDF."
+      );
+      setUploadError(true);
+    } finally {
+      setUploading(false);
     }
   };
 
@@ -90,8 +146,56 @@ function App() {
           </p>
         </section>
 
+        {/* PDF Upload Section */}
+        <section className="upload-card">
+          <h2>Upload Your Documents</h2>
+
+          <p>
+            Upload a PDF to add it to the EvidenceAI knowledge base.
+          </p>
+
+          <input
+            id="pdf-upload"
+            type="file"
+            accept=".pdf,application/pdf"
+            onChange={(event) => {
+              setSelectedFile(event.target.files[0] || null);
+              setUploadMessage("");
+              setUploadError(false);
+            }}
+          />
+
+          {selectedFile && (
+            <p className="selected-file">
+              Selected: {selectedFile.name}
+            </p>
+          )}
+
+          <button
+            onClick={uploadPDF}
+            disabled={uploading || !selectedFile}
+          >
+            {uploading ? "Uploading and Indexing..." : "Upload PDF"}
+          </button>
+
+          {uploadMessage && (
+            <p
+              className={
+                uploadError
+                  ? "upload-message error"
+                  : "upload-message success"
+              }
+            >
+              {uploadMessage}
+            </p>
+          )}
+        </section>
+
+        {/* Question Section */}
         <section className="question-card">
-          <label htmlFor="question-input">Ask your question</label>
+          <label htmlFor="question-input">
+            Ask your question
+          </label>
 
           <textarea
             id="question-input"
@@ -105,6 +209,7 @@ function App() {
           </button>
         </section>
 
+        {/* Answer Section */}
         {answer && (
           <section className="answer-card">
             <h2>Answer</h2>
@@ -115,6 +220,7 @@ function App() {
           </section>
         )}
 
+        {/* Verified Sources */}
         {sources.length > 0 && (
           <section className="sources-card">
             <h2>Verified Sources</h2>
