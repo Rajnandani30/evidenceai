@@ -19,7 +19,7 @@ from backend.generation.llm import generate_answer
 app = FastAPI(
     title="EvidenceAI API",
     description="Hybrid-search RAG API with citation verification",
-    version="1.2.0"
+    version="1.3.0"
 )
 
 
@@ -100,15 +100,66 @@ class QueryRequest(BaseModel):
 @app.get("/")
 def root():
 
-    return {
-        "message": "EvidenceAI API is running",
-        "documents_loaded": len(
+    with knowledge_base_lock:
+
+        documents_loaded = len(
             set(
                 chunk["file_name"]
                 for chunk in chunks
             )
-        ),
-        "total_chunks": len(chunks)
+        )
+
+        total_chunks = len(chunks)
+
+    return {
+        "message": "EvidenceAI API is running",
+        "documents_loaded": documents_loaded,
+        "total_chunks": total_chunks
+    }
+
+
+# -------------------------
+# Document Library
+# -------------------------
+
+@app.get("/documents")
+def get_documents():
+
+    with knowledge_base_lock:
+
+        documents = {}
+
+        for chunk in chunks:
+
+            file_name = chunk["file_name"]
+
+            if file_name not in documents:
+
+                documents[file_name] = {
+                    "file_name": file_name,
+                    "pages": set(),
+                    "chunks": 0
+                }
+
+            documents[file_name]["pages"].add(
+                chunk["page_number"]
+            )
+
+            documents[file_name]["chunks"] += 1
+
+        document_list = []
+
+        for document in documents.values():
+
+            document_list.append({
+                "file_name": document["file_name"],
+                "pages": len(document["pages"]),
+                "chunks": document["chunks"]
+            })
+
+    return {
+        "total_documents": len(document_list),
+        "documents": document_list
     }
 
 
@@ -188,6 +239,13 @@ def upload_pdf(
             chunks = updated_chunks
             search_engine = updated_search_engine
 
+            documents_loaded = len(
+                set(
+                    chunk["file_name"]
+                    for chunk in chunks
+                )
+            )
+
         return {
             "message": "PDF uploaded and indexed successfully.",
             "file_name": safe_name,
@@ -198,12 +256,7 @@ def upload_pdf(
                 )
             ),
             "chunks_created": len(new_chunks),
-            "documents_loaded": len(
-                set(
-                    chunk["file_name"]
-                    for chunk in chunks
-                )
-            )
+            "documents_loaded": documents_loaded
         }
 
     except HTTPException:
