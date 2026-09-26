@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import "./App.css";
 
@@ -19,6 +18,11 @@ function App() {
   const [documentsLoading, setDocumentsLoading] = useState(false);
   const [documentsError, setDocumentsError] = useState("");
 
+  // Delete PDF states
+  const [deletingFile, setDeletingFile] = useState(null);
+  const [deleteMessage, setDeleteMessage] = useState("");
+  const [deleteError, setDeleteError] = useState(false);
+
   const API_URL = "http://127.0.0.1:8000";
 
   const navigation = [
@@ -26,6 +30,10 @@ function App() {
     { id: "library", label: "Document Library", icon: "▤" },
     { id: "upload", label: "Upload Documents", icon: "↑" },
   ];
+
+  // -------------------------
+  // Format AI Answer
+  // -------------------------
 
   const formatAnswer = (text) => {
     if (!text) return null;
@@ -50,6 +58,10 @@ function App() {
     return <p>{cleanedText}</p>;
   };
 
+  // -------------------------
+  // Fetch Documents
+  // -------------------------
+
   const fetchDocuments = async () => {
     setDocumentsLoading(true);
     setDocumentsError("");
@@ -62,6 +74,7 @@ function App() {
       }
 
       const data = await response.json();
+
       setDocuments(data.documents || []);
     } catch {
       setDocumentsError(
@@ -72,9 +85,15 @@ function App() {
     }
   };
 
+  // Load documents when application starts
+
   useEffect(() => {
     fetchDocuments();
   }, []);
+
+  // -------------------------
+  // Ask EvidenceAI
+  // -------------------------
 
   const askQuestion = async () => {
     if (!question.trim()) return;
@@ -111,6 +130,10 @@ function App() {
     }
   };
 
+  // -------------------------
+  // Upload PDF
+  // -------------------------
+
   const uploadPDF = async () => {
     if (!selectedFile) {
       setUploadMessage("Please select a PDF file first.");
@@ -124,6 +147,7 @@ function App() {
 
     try {
       const formData = new FormData();
+
       formData.append("file", selectedFile);
 
       const response = await fetch(`${API_URL}/upload`, {
@@ -158,6 +182,65 @@ function App() {
     }
   };
 
+  // -------------------------
+  // Delete PDF
+  // -------------------------
+
+  const deletePDF = async (fileName) => {
+    // Ask confirmation before deleting
+
+    const confirmed = window.confirm(
+      `Are you sure you want to permanently delete "${fileName}"?\n\nThis will remove the PDF and its indexed content from EvidenceAI.`
+    );
+
+    // Stop if user clicks Cancel
+
+    if (!confirmed) {
+      return;
+    }
+
+    setDeletingFile(fileName);
+    setDeleteMessage("");
+    setDeleteError(false);
+
+    try {
+      const response = await fetch(
+        `${API_URL}/documents/${encodeURIComponent(fileName)}`,
+        {
+          method: "DELETE",
+        }
+      );
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.detail || "Failed to delete PDF.");
+      }
+
+      // Show success message
+
+      setDeleteMessage(
+        `"${fileName}" was deleted successfully.`
+      );
+
+      // Refresh document library and dashboard statistics
+
+      await fetchDocuments();
+    } catch (error) {
+      setDeleteMessage(
+        error.message || "Unable to delete PDF."
+      );
+
+      setDeleteError(true);
+    } finally {
+      setDeletingFile(null);
+    }
+  };
+
+  // -------------------------
+  // Dashboard Statistics
+  // -------------------------
+
   const totalPages = documents.reduce(
     (total, doc) => total + doc.pages,
     0
@@ -174,10 +257,15 @@ function App() {
     upload: "Upload Documents",
   };
 
+  // -------------------------
+  // Main Application UI
+  // -------------------------
+
   return (
     <div className="app dashboard-layout">
 
       {/* Sidebar */}
+
       <aside className="sidebar">
 
         <div className="sidebar-brand">
@@ -211,6 +299,7 @@ function App() {
         <div className="sidebar-bottom">
           <div className="sidebar-status">
             <span className="status-dot"></span>
+
             <div>
               <strong>EvidenceAI</strong>
               <small>Document-based AI</small>
@@ -221,9 +310,11 @@ function App() {
       </aside>
 
       {/* Main workspace */}
+
       <div className="dashboard-main">
 
         {/* Top bar */}
+
         <header className="dashboard-topbar">
           <div>
             <span className="topbar-label">
@@ -241,7 +332,10 @@ function App() {
 
         <main className="dashboard-content">
 
-          {/* ASK EVIDENCEAI PAGE */}
+          {/* =========================
+              ASK EVIDENCEAI PAGE
+          ========================= */}
+
           {activePage === "ask" && (
             <section className="workspace-page">
 
@@ -266,10 +360,13 @@ function App() {
                 <div className="banner-art">✦</div>
               </div>
 
+              {/* Overview Statistics */}
+
               <div className="overview-stats">
 
                 <div className="overview-stat">
                   <span className="overview-stat-icon">▤</span>
+
                   <div>
                     <strong>{documents.length}</strong>
                     <span>Documents</span>
@@ -278,6 +375,7 @@ function App() {
 
                 <div className="overview-stat">
                   <span className="overview-stat-icon">▧</span>
+
                   <div>
                     <strong>{totalPages}</strong>
                     <span>Total Pages</span>
@@ -286,6 +384,7 @@ function App() {
 
                 <div className="overview-stat">
                   <span className="overview-stat-icon">⌘</span>
+
                   <div>
                     <strong>{totalChunks}</strong>
                     <span>Indexed Chunks</span>
@@ -294,16 +393,22 @@ function App() {
 
               </div>
 
+              {/* Question Card */}
+
               <section className="question-card">
+
                 <div className="section-heading">
                   <div>
                     <h2>Ask your question</h2>
+
                     <p>
                       Ask anything about your uploaded documents.
                     </p>
                   </div>
 
-                  <span className="ai-badge">AI POWERED</span>
+                  <span className="ai-badge">
+                    AI POWERED
+                  </span>
                 </div>
 
                 <textarea
@@ -329,7 +434,10 @@ function App() {
                       : "✦ Ask EvidenceAI"}
                   </button>
                 </div>
+
               </section>
+
+              {/* Loading Message */}
 
               {loading && (
                 <div className="answer-card">
@@ -338,6 +446,8 @@ function App() {
                   </p>
                 </div>
               )}
+
+              {/* AI Answer */}
 
               {answer && (
                 <section className="answer-card">
@@ -348,6 +458,8 @@ function App() {
                   </div>
                 </section>
               )}
+
+              {/* Verified Sources */}
 
               {sources.length > 0 && (
                 <section className="sources-card">
@@ -378,13 +490,17 @@ function App() {
             </section>
           )}
 
-          {/* DOCUMENT LIBRARY PAGE */}
+          {/* =========================
+              DOCUMENT LIBRARY PAGE
+          ========================= */}
+
           {activePage === "library" && (
             <section className="workspace-page">
 
               <div className="page-intro">
                 <div>
                   <h2>Your Documents</h2>
+
                   <p>
                     Browse and manage the documents indexed
                     in your EvidenceAI knowledge base.
@@ -396,14 +512,19 @@ function App() {
                   onClick={fetchDocuments}
                   disabled={documentsLoading}
                 >
-                  {documentsLoading ? "Refreshing..." : "↻ Refresh"}
+                  {documentsLoading
+                    ? "Refreshing..."
+                    : "↻ Refresh"}
                 </button>
               </div>
+
+              {/* Library Statistics */}
 
               <div className="overview-stats">
 
                 <div className="overview-stat">
                   <span className="overview-stat-icon">▤</span>
+
                   <div>
                     <strong>{documents.length}</strong>
                     <span>Documents</span>
@@ -412,6 +533,7 @@ function App() {
 
                 <div className="overview-stat">
                   <span className="overview-stat-icon">▧</span>
+
                   <div>
                     <strong>{totalPages}</strong>
                     <span>Total Pages</span>
@@ -420,6 +542,7 @@ function App() {
 
                 <div className="overview-stat">
                   <span className="overview-stat-icon">⌘</span>
+
                   <div>
                     <strong>{totalChunks}</strong>
                     <span>Total Chunks</span>
@@ -428,10 +551,14 @@ function App() {
 
               </div>
 
+              {/* Documents Card */}
+
               <section className="documents-card">
+
                 <div className="documents-header">
                   <div>
                     <h2>Indexed Documents</h2>
+
                     <p>
                       All PDFs currently available for AI search.
                     </p>
@@ -444,11 +571,27 @@ function App() {
                   </button>
                 </div>
 
+                {/* Delete Success/Error Message */}
+
+                {deleteMessage && (
+                  <p
+                    className={`upload-message ${
+                      deleteError ? "error" : "success"
+                    }`}
+                  >
+                    {deleteMessage}
+                  </p>
+                )}
+
+                {/* Loading State */}
+
                 {documentsLoading && (
                   <p className="documents-status">
                     Loading your documents...
                   </p>
                 )}
+
+                {/* Error State */}
 
                 {documentsError && (
                   <p className="upload-message error">
@@ -456,16 +599,21 @@ function App() {
                   </p>
                 )}
 
+                {/* Empty Library */}
+
                 {!documentsLoading &&
                   !documentsError &&
                   documents.length === 0 && (
                     <div className="empty-library">
                       <span>▤</span>
+
                       <h3>No documents yet</h3>
+
                       <p>
                         Upload a PDF to start building your
                         knowledge base.
                       </p>
+
                       <button
                         onClick={() => setActivePage("upload")}
                       >
@@ -474,14 +622,18 @@ function App() {
                     </div>
                   )}
 
+                {/* Document List */}
+
                 {!documentsLoading &&
                   documents.length > 0 && (
                     <div className="document-list">
+
                       {documents.map((document, index) => (
                         <div
                           className="document-item"
                           key={document.file_name}
                         >
+
                           <div className="document-icon">
                             PDF
                           </div>
@@ -497,7 +649,9 @@ function App() {
                                   : "Pages"}
                               </span>
 
-                              <span className="meta-dot">•</span>
+                              <span className="meta-dot">
+                                •
+                              </span>
 
                               <span>
                                 {document.chunks}{" "}
@@ -511,22 +665,61 @@ function App() {
                           <span className="document-number">
                             #{index + 1}
                           </span>
+
+                          {/* DELETE BUTTON */}
+
+                          <button
+                            type="button"
+                            className="delete-button"
+                            onClick={() =>
+                              deletePDF(document.file_name)
+                            }
+                            disabled={deletingFile !== null}
+                            style={{
+                              backgroundColor: "#dc3545",
+                              color: "#ffffff",
+                              border: "none",
+                              borderRadius: "8px",
+                              padding: "10px 18px",
+                              cursor:
+                                deletingFile !== null
+                                  ? "not-allowed"
+                                  : "pointer",
+                              opacity:
+                                deletingFile !== null
+                                  ? 0.6
+                                  : 1,
+                              fontWeight: "600",
+                              marginLeft: "12px",
+                            }}
+                          >
+                            {deletingFile === document.file_name
+                              ? "Deleting..."
+                              : "Delete"}
+                          </button>
+
                         </div>
                       ))}
+
                     </div>
                   )}
+
               </section>
 
             </section>
           )}
 
-          {/* UPLOAD DOCUMENTS PAGE */}
+          {/* =========================
+              UPLOAD DOCUMENTS PAGE
+          ========================= */}
+
           {activePage === "upload" && (
             <section className="workspace-page">
 
               <div className="page-intro">
                 <div>
                   <h2>Add documents</h2>
+
                   <p>
                     Upload PDFs to expand your EvidenceAI
                     knowledge base.
@@ -534,7 +727,10 @@ function App() {
                 </div>
               </div>
 
+              {/* Upload Card */}
+
               <section className="upload-card">
+
                 <div className="upload-heading-icon">
                   ↑
                 </div>
@@ -548,7 +744,10 @@ function App() {
                 </p>
 
                 <div className="upload-drop-area">
-                  <span className="upload-file-icon">PDF</span>
+
+                  <span className="upload-file-icon">
+                    PDF
+                  </span>
 
                   <h3>
                     {selectedFile
@@ -568,10 +767,12 @@ function App() {
                       setSelectedFile(
                         event.target.files[0] || null
                       );
+
                       setUploadMessage("");
                       setUploadError(false);
                     }}
                   />
+
                 </div>
 
                 <button
@@ -582,6 +783,8 @@ function App() {
                     ? "Uploading and Indexing..."
                     : "↑ Upload and Index PDF"}
                 </button>
+
+                {/* Upload Message */}
 
                 {uploadMessage && (
                   <p
@@ -605,12 +808,19 @@ function App() {
                       View Document Library →
                     </button>
                   )}
+
               </section>
+
+              {/* Upload Information */}
 
               <div className="upload-info-card">
                 <span>✦</span>
+
                 <div>
-                  <strong>What happens after upload?</strong>
+                  <strong>
+                    What happens after upload?
+                  </strong>
+
                   <p>
                     EvidenceAI extracts PDF text, creates
                     searchable chunks, and updates its retrieval
@@ -624,6 +834,8 @@ function App() {
           )}
 
         </main>
+
+        {/* Footer */}
 
         <footer className="dashboard-footer">
           EvidenceAI · Hybrid Search · Retrieval-Augmented Generation

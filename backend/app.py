@@ -1,4 +1,4 @@
-
+import re
 from pathlib import Path
 from threading import Lock
 from uuid import uuid4
@@ -281,12 +281,15 @@ def upload_pdf(
         file.file.close()
 
 
+
 # -------------------------
 # Ask EvidenceAI
 # -------------------------
 
 @app.post("/ask")
 def ask_question(request: QueryRequest):
+
+    global chunks, search_engine
 
     query = request.question.strip()
 
@@ -296,12 +299,113 @@ def ask_question(request: QueryRequest):
             detail="Question cannot be empty."
         )
 
-    with knowledge_base_lock:
+    # Detect a PDF filename in the question
+    filename_match = re.search(
+        r'(?:named|in|from|about)\s+["\']?([A-Za-z0-9_.-]+\.pdf)',
+        query,
+        re.IGNORECASE
+    )
 
-        results = search_engine.search(
+    # Also support questions that contain only a filename
+    if not filename_match:
+        filename_match = re.search(
+            r'\b([A-Za-z0-9_.-]+\.pdf)\b',
+            query,
+            re.IGNORECASE
+        )
+
+    requested_filename = (
+        filename_match.group(1)
+        if filename_match
+        else None
+    )
+
+    # Get the current knowledge base safely
+    with knowledge_base_lock:
+        current_chunks = list(chunks)
+        current_search_engine = search_engine
+
+    # -------------------------
+    # Search a specific PDF
+    # -------------------------
+
+    if requested_filename:
+
+        matching_chunks = [
+            chunk
+            for chunk in current_chunks
+            if chunk["file_name"].lower()
+            == requested_filename.lower()
+        ]
+
+        if not matching_chunks:
+            raise HTTPException(
+                status_code=404,
+                detail=(
+                    f"PDF '{requested_filename}' "
+                    "was not found in the library."
+                )
+            )
+
+        print(
+            f"Searching only in PDF: "
+            f"{requested_filename}"
+        )
+
+        # Remove the filename from the search query
+        search_query = re.sub(
+            re.escape(requested_filename),
+            "",
+            query,
+            flags=re.IGNORECASE
+        ).strip()
+
+        if not search_query:
+            search_query = query
+
+        # Build a search engine for the selected PDF only
+        document_search_engine = PDFHybridSearch(
+            matching_chunks
+        )
+
+        results = document_search_engine.search(
+            search_query,
+            top_k=5
+        )
+
+    # -------------------------
+    # Search all PDFs normally
+    # -------------------------
+
+    else:
+
+        results = current_search_engine.search(
             query,
             top_k=5
         )
+
+    # -------------------------
+    # Retrieval Debug
+    # -------------------------
+
+    print("\n========== RETRIEVAL DEBUG ==========")
+    print("Question:", query)
+    print("Requested PDF:", requested_filename)
+    print("Number of retrieved results:", len(results))
+
+    for i, result in enumerate(results, start=1):
+
+        print(f"\n--- Result {i} ---")
+        print("File:", result.get("file_name"))
+        print("Page:", result.get("page_number"))
+        print("Score:", result.get("hybrid_score"))
+        print("Text:", result.get("text", "")[:500])
+
+    print("\n========== END RETRIEVAL DEBUG ==========\n")
+
+    # -------------------------
+    # Generate Answer
+    # -------------------------
 
     answer, verified_sources = generate_answer(
         query,
