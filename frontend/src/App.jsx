@@ -3,6 +3,8 @@ import { useEffect, useState } from "react";
 import "./App.css";
 
 function App() {
+  const [activePage, setActivePage] = useState("ask");
+
   const [question, setQuestion] = useState("");
   const [answer, setAnswer] = useState("");
   const [sources, setSources] = useState([]);
@@ -13,26 +15,26 @@ function App() {
   const [uploadMessage, setUploadMessage] = useState("");
   const [uploadError, setUploadError] = useState(false);
 
-  // Document Library states
   const [documents, setDocuments] = useState([]);
   const [documentsLoading, setDocumentsLoading] = useState(false);
   const [documentsError, setDocumentsError] = useState("");
 
   const API_URL = "http://127.0.0.1:8000";
 
-  // Format answer into readable bullet points
+  const navigation = [
+    { id: "ask", label: "Ask EvidenceAI", icon: "✦" },
+    { id: "library", label: "Document Library", icon: "▤" },
+    { id: "upload", label: "Upload Documents", icon: "↑" },
+  ];
+
   const formatAnswer = (text) => {
     if (!text) return null;
 
-    const cleanedText = text
-      .replace(/\*\*/g, "")
-      .trim();
+    const cleanedText = text.replace(/\*\*/g, "").trim();
 
     const lines = cleanedText
       .split(/\n|(?=\s*[-*]\s)/)
-      .map((line) =>
-        line.replace(/^\s*[-*]\s*/, "").trim()
-      )
+      .map((line) => line.replace(/^\s*[-*]\s*/, "").trim())
       .filter(Boolean);
 
     if (lines.length > 1) {
@@ -48,7 +50,6 @@ function App() {
     return <p>{cleanedText}</p>;
   };
 
-  // Fetch Document Library from backend
   const fetchDocuments = async () => {
     setDocumentsLoading(true);
     setDocumentsError("");
@@ -61,9 +62,8 @@ function App() {
       }
 
       const data = await response.json();
-
       setDocuments(data.documents || []);
-    } catch (error) {
+    } catch {
       setDocumentsError(
         "Unable to load documents. Make sure the backend is running."
       );
@@ -72,12 +72,10 @@ function App() {
     }
   };
 
-  // Load documents when the dashboard opens
   useEffect(() => {
     fetchDocuments();
   }, []);
 
-  // Ask EvidenceAI
   const askQuestion = async () => {
     if (!question.trim()) return;
 
@@ -104,7 +102,7 @@ function App() {
 
       setAnswer(data.answer || "No answer was generated.");
       setSources(data.verified_sources || []);
-    } catch (error) {
+    } catch {
       setAnswer(
         "Unable to connect to EvidenceAI backend. Make sure the FastAPI server is running."
       );
@@ -113,7 +111,6 @@ function App() {
     }
   };
 
-  // Upload PDF to backend
   const uploadPDF = async () => {
     if (!selectedFile) {
       setUploadMessage("Please select a PDF file first.");
@@ -137,9 +134,7 @@ function App() {
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(
-          data.detail || "PDF upload failed."
-        );
+        throw new Error(data.detail || "PDF upload failed.");
       }
 
       setUploadMessage(
@@ -148,309 +143,493 @@ function App() {
 
       setSelectedFile(null);
 
-      // Clear the file input after successful upload
       const fileInput = document.getElementById("pdf-upload");
 
       if (fileInput) {
         fileInput.value = "";
       }
 
-      // Refresh Document Library after successful upload
       await fetchDocuments();
-
     } catch (error) {
-      setUploadMessage(
-        error.message || "Unable to upload PDF."
-      );
-
+      setUploadMessage(error.message || "Unable to upload PDF.");
       setUploadError(true);
     } finally {
       setUploading(false);
     }
   };
 
+  const totalPages = documents.reduce(
+    (total, doc) => total + doc.pages,
+    0
+  );
+
+  const totalChunks = documents.reduce(
+    (total, doc) => total + doc.chunks,
+    0
+  );
+
+  const pageTitles = {
+    ask: "Ask EvidenceAI",
+    library: "Document Library",
+    upload: "Upload Documents",
+  };
+
   return (
-    <div className="app">
+    <div className="app dashboard-layout">
 
-      {/* Header */}
-      <header className="header">
-        <div>
-          <h1>EvidenceAI</h1>
-          <p>Evidence-based AI Question Answering</p>
+      {/* Sidebar */}
+      <aside className="sidebar">
+
+        <div className="sidebar-brand">
+          <div className="brand-icon">E</div>
+
+          <div>
+            <h2>EvidenceAI</h2>
+            <span>Research workspace</span>
+          </div>
         </div>
-      </header>
 
-      <main className="container">
+        <div className="sidebar-section-label">
+          WORKSPACE
+        </div>
 
-        {/* Hero Section */}
-        <section className="hero">
-          <h2>Ask questions. Get evidence.</h2>
-
-          <p>
-            EvidenceAI uses hybrid search, reranking and
-            citation verification to generate answers
-            grounded in your documents.
-          </p>
-        </section>
-
-        {/* PDF Upload Section */}
-        <section className="upload-card">
-          <h2>Upload Your Documents</h2>
-
-          <p>
-            Upload a PDF to add it to the EvidenceAI
-            knowledge base.
-          </p>
-
-          <input
-            id="pdf-upload"
-            type="file"
-            accept=".pdf,application/pdf"
-            onChange={(event) => {
-              setSelectedFile(
-                event.target.files[0] || null
-              );
-
-              setUploadMessage("");
-              setUploadError(false);
-            }}
-          />
-
-          {selectedFile && (
-            <p className="selected-file">
-              Selected: {selectedFile.name}
-            </p>
-          )}
-
-          <button
-            onClick={uploadPDF}
-            disabled={uploading || !selectedFile}
-          >
-            {uploading
-              ? "Uploading and Indexing..."
-              : "Upload PDF"}
-          </button>
-
-          {uploadMessage && (
-            <p
-              className={
-                uploadError
-                  ? "upload-message error"
-                  : "upload-message success"
-              }
-            >
-              {uploadMessage}
-            </p>
-          )}
-        </section>
-
-        {/* Document Library Section */}
-        <section className="documents-card">
-
-          <div className="documents-header">
-            <div>
-              <h2>Document Library</h2>
-
-              <p>
-                Browse the documents indexed in EvidenceAI.
-              </p>
-            </div>
-
+        <nav className="sidebar-nav">
+          {navigation.map((item) => (
             <button
-              className="refresh-button"
-              onClick={fetchDocuments}
-              disabled={documentsLoading}
+              key={item.id}
+              className={`nav-item ${
+                activePage === item.id ? "active" : ""
+              }`}
+              onClick={() => setActivePage(item.id)}
             >
-              {documentsLoading
-                ? "Refreshing..."
-                : "Refresh"}
+              <span className="nav-icon">{item.icon}</span>
+              <span>{item.label}</span>
             </button>
+          ))}
+        </nav>
+
+        <div className="sidebar-bottom">
+          <div className="sidebar-status">
+            <span className="status-dot"></span>
+            <div>
+              <strong>EvidenceAI</strong>
+              <small>Document-based AI</small>
+            </div>
+          </div>
+        </div>
+
+      </aside>
+
+      {/* Main workspace */}
+      <div className="dashboard-main">
+
+        {/* Top bar */}
+        <header className="dashboard-topbar">
+          <div>
+            <span className="topbar-label">
+              EVIDENCEAI / WORKSPACE
+            </span>
+
+            <h1>{pageTitles[activePage]}</h1>
           </div>
 
-          {/* Document Statistics */}
-          <div className="document-stats">
-
-            <div className="stat-box">
-              <span className="stat-number">
-                {documents.length}
-              </span>
-
-              <span className="stat-label">
-                Documents
-              </span>
-            </div>
-
-            <div className="stat-box">
-              <span className="stat-number">
-                {documents.reduce(
-                  (total, doc) => total + doc.pages,
-                  0
-                )}
-              </span>
-
-              <span className="stat-label">
-                Total Pages
-              </span>
-            </div>
-
-            <div className="stat-box">
-              <span className="stat-number">
-                {documents.reduce(
-                  (total, doc) => total + doc.chunks,
-                  0
-                )}
-              </span>
-
-              <span className="stat-label">
-                Total Chunks
-              </span>
-            </div>
-
+          <div className="topbar-stats">
+            <span className="topbar-dot"></span>
+            {documents.length} Documents
           </div>
+        </header>
 
-          {/* Loading Message */}
-          {documentsLoading && (
-            <p className="documents-status">
-              Loading your documents...
-            </p>
-          )}
+        <main className="dashboard-content">
 
-          {/* Error Message */}
-          {documentsError && (
-            <p className="upload-message error">
-              {documentsError}
-            </p>
-          )}
+          {/* ASK EVIDENCEAI PAGE */}
+          {activePage === "ask" && (
+            <section className="workspace-page">
 
-          {/* Empty Library */}
-          {!documentsLoading &&
-            !documentsError &&
-            documents.length === 0 && (
-              <p className="documents-status">
-                No documents found. Upload a PDF to get started.
-              </p>
-            )}
-
-          {/* Document List */}
-          {!documentsLoading &&
-            documents.length > 0 && (
-              <div className="document-list">
-
-                {documents.map((document, index) => (
-                  <div
-                    className="document-item"
-                    key={document.file_name}
-                  >
-
-                    <div className="document-icon">
-                      PDF
-                    </div>
-
-                    <div className="document-info">
-                      <h3>
-                        {document.file_name}
-                      </h3>
-
-                      <div className="document-meta">
-                        <span>
-                          {document.pages}{" "}
-                          {document.pages === 1
-                            ? "Page"
-                            : "Pages"}
-                        </span>
-
-                        <span className="meta-dot">
-                          •
-                        </span>
-
-                        <span>
-                          {document.chunks}{" "}
-                          {document.chunks === 1
-                            ? "Chunk"
-                            : "Chunks"}
-                        </span>
-                      </div>
-                    </div>
-
-                    <span className="document-number">
-                      #{index + 1}
-                    </span>
-
-                  </div>
-                ))}
-
-              </div>
-            )}
-
-        </section>
-
-        {/* Question Section */}
-        <section className="question-card">
-          <label htmlFor="question-input">
-            Ask your question
-          </label>
-
-          <textarea
-            id="question-input"
-            value={question}
-            onChange={(event) =>
-              setQuestion(event.target.value)
-            }
-            placeholder="Example: What is Retrieval Augmented Generation (RAG)?"
-          />
-
-          <button
-            onClick={askQuestion}
-            disabled={loading}
-          >
-            {loading
-              ? "Searching Evidence..."
-              : "Ask EvidenceAI"}
-          </button>
-        </section>
-
-        {/* Answer Section */}
-        {answer && (
-          <section className="answer-card">
-            <h2>Answer</h2>
-
-            <div className="answer">
-              {formatAnswer(answer)}
-            </div>
-          </section>
-        )}
-
-        {/* Verified Sources */}
-        {sources.length > 0 && (
-          <section className="sources-card">
-            <h2>Verified Sources</h2>
-
-            {sources.map((source, index) => (
-              <div
-                className="source"
-                key={index}
-              >
-                <strong>
-                  {source.title ||
-                    source.file_name ||
-                    "Document"}
-                </strong>
-
-                {source.page_number && (
-                  <span className="source-page">
-                    Page {source.page_number}
+              <div className="welcome-banner">
+                <div>
+                  <span className="banner-label">
+                    AI RESEARCH ASSISTANT
                   </span>
+
+                  <h2>
+                    Ask questions.
+                    <br />
+                    <span>Get evidence.</span>
+                  </h2>
+
+                  <p>
+                    Search your documents using hybrid retrieval,
+                    reranking, and citation verification.
+                  </p>
+                </div>
+
+                <div className="banner-art">✦</div>
+              </div>
+
+              <div className="overview-stats">
+
+                <div className="overview-stat">
+                  <span className="overview-stat-icon">▤</span>
+                  <div>
+                    <strong>{documents.length}</strong>
+                    <span>Documents</span>
+                  </div>
+                </div>
+
+                <div className="overview-stat">
+                  <span className="overview-stat-icon">▧</span>
+                  <div>
+                    <strong>{totalPages}</strong>
+                    <span>Total Pages</span>
+                  </div>
+                </div>
+
+                <div className="overview-stat">
+                  <span className="overview-stat-icon">⌘</span>
+                  <div>
+                    <strong>{totalChunks}</strong>
+                    <span>Indexed Chunks</span>
+                  </div>
+                </div>
+
+              </div>
+
+              <section className="question-card">
+                <div className="section-heading">
+                  <div>
+                    <h2>Ask your question</h2>
+                    <p>
+                      Ask anything about your uploaded documents.
+                    </p>
+                  </div>
+
+                  <span className="ai-badge">AI POWERED</span>
+                </div>
+
+                <textarea
+                  id="question-input"
+                  value={question}
+                  onChange={(event) =>
+                    setQuestion(event.target.value)
+                  }
+                  placeholder="Example: What is Retrieval Augmented Generation (RAG)?"
+                />
+
+                <div className="question-actions">
+                  <span className="input-hint">
+                    Answers are grounded in your documents.
+                  </span>
+
+                  <button
+                    onClick={askQuestion}
+                    disabled={loading || !question.trim()}
+                  >
+                    {loading
+                      ? "Searching Evidence..."
+                      : "✦ Ask EvidenceAI"}
+                  </button>
+                </div>
+              </section>
+
+              {loading && (
+                <div className="answer-card">
+                  <p className="documents-status">
+                    Searching documents and generating your answer...
+                  </p>
+                </div>
+              )}
+
+              {answer && (
+                <section className="answer-card">
+                  <h2>Answer</h2>
+
+                  <div className="answer">
+                    {formatAnswer(answer)}
+                  </div>
+                </section>
+              )}
+
+              {sources.length > 0 && (
+                <section className="sources-card">
+                  <h2>Verified Sources</h2>
+
+                  {sources.map((source, index) => (
+                    <div className="source" key={index}>
+                      <strong>
+                        {source.title ||
+                          source.file_name ||
+                          "Document"}
+                      </strong>
+
+                      {source.page_number && (
+                        <span className="source-page">
+                          Page {source.page_number}
+                        </span>
+                      )}
+
+                      <small className="source-file">
+                        {source.file_name}
+                      </small>
+                    </div>
+                  ))}
+                </section>
+              )}
+
+            </section>
+          )}
+
+          {/* DOCUMENT LIBRARY PAGE */}
+          {activePage === "library" && (
+            <section className="workspace-page">
+
+              <div className="page-intro">
+                <div>
+                  <h2>Your Documents</h2>
+                  <p>
+                    Browse and manage the documents indexed
+                    in your EvidenceAI knowledge base.
+                  </p>
+                </div>
+
+                <button
+                  className="refresh-button"
+                  onClick={fetchDocuments}
+                  disabled={documentsLoading}
+                >
+                  {documentsLoading ? "Refreshing..." : "↻ Refresh"}
+                </button>
+              </div>
+
+              <div className="overview-stats">
+
+                <div className="overview-stat">
+                  <span className="overview-stat-icon">▤</span>
+                  <div>
+                    <strong>{documents.length}</strong>
+                    <span>Documents</span>
+                  </div>
+                </div>
+
+                <div className="overview-stat">
+                  <span className="overview-stat-icon">▧</span>
+                  <div>
+                    <strong>{totalPages}</strong>
+                    <span>Total Pages</span>
+                  </div>
+                </div>
+
+                <div className="overview-stat">
+                  <span className="overview-stat-icon">⌘</span>
+                  <div>
+                    <strong>{totalChunks}</strong>
+                    <span>Total Chunks</span>
+                  </div>
+                </div>
+
+              </div>
+
+              <section className="documents-card">
+                <div className="documents-header">
+                  <div>
+                    <h2>Indexed Documents</h2>
+                    <p>
+                      All PDFs currently available for AI search.
+                    </p>
+                  </div>
+
+                  <button
+                    onClick={() => setActivePage("upload")}
+                  >
+                    + Add PDF
+                  </button>
+                </div>
+
+                {documentsLoading && (
+                  <p className="documents-status">
+                    Loading your documents...
+                  </p>
                 )}
 
-                <small className="source-file">
-                  {source.file_name}
-                </small>
-              </div>
-            ))}
-          </section>
-        )}
+                {documentsError && (
+                  <p className="upload-message error">
+                    {documentsError}
+                  </p>
+                )}
 
-      </main>
+                {!documentsLoading &&
+                  !documentsError &&
+                  documents.length === 0 && (
+                    <div className="empty-library">
+                      <span>▤</span>
+                      <h3>No documents yet</h3>
+                      <p>
+                        Upload a PDF to start building your
+                        knowledge base.
+                      </p>
+                      <button
+                        onClick={() => setActivePage("upload")}
+                      >
+                        Upload your first PDF
+                      </button>
+                    </div>
+                  )}
+
+                {!documentsLoading &&
+                  documents.length > 0 && (
+                    <div className="document-list">
+                      {documents.map((document, index) => (
+                        <div
+                          className="document-item"
+                          key={document.file_name}
+                        >
+                          <div className="document-icon">
+                            PDF
+                          </div>
+
+                          <div className="document-info">
+                            <h3>{document.file_name}</h3>
+
+                            <div className="document-meta">
+                              <span>
+                                {document.pages}{" "}
+                                {document.pages === 1
+                                  ? "Page"
+                                  : "Pages"}
+                              </span>
+
+                              <span className="meta-dot">•</span>
+
+                              <span>
+                                {document.chunks}{" "}
+                                {document.chunks === 1
+                                  ? "Chunk"
+                                  : "Chunks"}
+                              </span>
+                            </div>
+                          </div>
+
+                          <span className="document-number">
+                            #{index + 1}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+              </section>
+
+            </section>
+          )}
+
+          {/* UPLOAD DOCUMENTS PAGE */}
+          {activePage === "upload" && (
+            <section className="workspace-page">
+
+              <div className="page-intro">
+                <div>
+                  <h2>Add documents</h2>
+                  <p>
+                    Upload PDFs to expand your EvidenceAI
+                    knowledge base.
+                  </p>
+                </div>
+              </div>
+
+              <section className="upload-card">
+                <div className="upload-heading-icon">
+                  ↑
+                </div>
+
+                <h2>Upload your PDF</h2>
+
+                <p>
+                  Select a PDF document. EvidenceAI will process
+                  its pages, create chunks, and index the content
+                  for question answering.
+                </p>
+
+                <div className="upload-drop-area">
+                  <span className="upload-file-icon">PDF</span>
+
+                  <h3>
+                    {selectedFile
+                      ? selectedFile.name
+                      : "Choose a PDF document"}
+                  </h3>
+
+                  <p>
+                    PDF files only
+                  </p>
+
+                  <input
+                    id="pdf-upload"
+                    type="file"
+                    accept=".pdf,application/pdf"
+                    onChange={(event) => {
+                      setSelectedFile(
+                        event.target.files[0] || null
+                      );
+                      setUploadMessage("");
+                      setUploadError(false);
+                    }}
+                  />
+                </div>
+
+                <button
+                  onClick={uploadPDF}
+                  disabled={uploading || !selectedFile}
+                >
+                  {uploading
+                    ? "Uploading and Indexing..."
+                    : "↑ Upload and Index PDF"}
+                </button>
+
+                {uploadMessage && (
+                  <p
+                    className={
+                      uploadError
+                        ? "upload-message error"
+                        : "upload-message success"
+                    }
+                  >
+                    {uploadMessage}
+                  </p>
+                )}
+
+                {!uploadError &&
+                  uploadMessage &&
+                  !uploading && (
+                    <button
+                      className="refresh-button"
+                      onClick={() => setActivePage("library")}
+                    >
+                      View Document Library →
+                    </button>
+                  )}
+              </section>
+
+              <div className="upload-info-card">
+                <span>✦</span>
+                <div>
+                  <strong>What happens after upload?</strong>
+                  <p>
+                    EvidenceAI extracts PDF text, creates
+                    searchable chunks, and updates its retrieval
+                    index so you can ask questions about the
+                    document.
+                  </p>
+                </div>
+              </div>
+
+            </section>
+          )}
+
+        </main>
+
+        <footer className="dashboard-footer">
+          EvidenceAI · Hybrid Search · Retrieval-Augmented Generation
+        </footer>
+
+      </div>
     </div>
   );
 }
