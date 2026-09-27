@@ -1458,3 +1458,83 @@ textarea:focus {
     display: none;
   }
 }
+
+/* =========================
+   FORMATTED AI ANSWER
+========================= */
+
+.formatted-answer {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: 100%;
+}
+
+/* Main numbered points */
+
+.answer-main-point {
+  margin-top: 12px;
+  font-size: 1.05rem;
+  line-height: 1.7;
+  color: inherit;
+}
+
+.answer-main-point strong {
+  font-weight: 700;
+}
+
+/* Subpoints */
+
+.answer-sub-point {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding-left: 28px;
+  font-size: 0.98rem;
+  line-height: 1.7;
+  color: inherit;
+}
+
+/* Arrow symbol for subpoints */
+
+.sub-point-icon {
+  flex-shrink: 0;
+  font-weight: 700;
+  color: #4dd9ff;
+}
+
+/* Headings */
+
+.answer-heading {
+  margin-top: 12px;
+  font-size: 1.05rem;
+  line-height: 1.6;
+  font-weight: 700;
+  color: inherit;
+}
+
+/* Normal paragraphs */
+
+.answer-paragraph {
+  margin: 0;
+  font-size: 0.98rem;
+  line-height: 1.8;
+  color: inherit;
+}
+
+/* Mobile responsive formatting */
+
+@media (max-width: 768px) {
+  .answer-main-point {
+    font-size: 1rem;
+  }
+
+  .answer-sub-point {
+    padding-left: 16px;
+    font-size: 0.95rem;
+  }
+
+  .answer-paragraph {
+    font-size: 0.95rem;
+  }
+}

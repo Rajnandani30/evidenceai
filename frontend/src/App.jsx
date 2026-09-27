@@ -37,24 +37,63 @@ function App() {
   const formatAnswer = (text) => {
     if (!text) return null;
 
-    const cleanedText = text.replace(/\*\*/g, "").trim();
-
-    const lines = cleanedText
-      .split(/\n|(?=\s*[-*]\s)/)
-      .map((line) => line.replace(/^\s*[-*]\s*/, "").trim())
+    const lines = text
+      .replace(/\*\*/g, "")
+      .split("\n")
+      .map((line) => line.trim())
       .filter(Boolean);
 
-    if (lines.length > 1) {
-      return (
-        <ul className="answer-list">
-          {lines.map((line, index) => (
-            <li key={index}>{line}</li>
-          ))}
-        </ul>
-      );
-    }
+    const formattedLines = lines.map((line, index) => {
+      // Detect numbered main points: 1. or 1)
+      const mainPoint = line.match(/^(\d+)[.)]\s+(.+)/);
 
-    return <p>{cleanedText}</p>;
+      // Detect subpoints: -, *, •, ↳
+      const subPoint = line.match(/^[-*•↳]\s+(.+)/);
+
+      // Main points: bold and numbered
+      if (mainPoint) {
+        return (
+          <div className="answer-main-point" key={index}>
+            <strong>
+              {mainPoint[1]}. {mainPoint[2]}
+            </strong>
+          </div>
+        );
+      }
+
+      // Subpoints: indented with arrow symbol
+      if (subPoint) {
+        return (
+          <div className="answer-sub-point" key={index}>
+            <span className="sub-point-icon">↳</span>
+
+            <span>{subPoint[1]}</span>
+          </div>
+        );
+      }
+
+      // Detect headings ending with a colon
+      if (line.endsWith(":")) {
+        return (
+          <div className="answer-heading" key={index}>
+            <strong>{line}</strong>
+          </div>
+        );
+      }
+
+      // Normal paragraph
+      return (
+        <p className="answer-paragraph" key={index}>
+          {line}
+        </p>
+      );
+    });
+
+    return (
+      <div className="formatted-answer">
+        {formattedLines}
+      </div>
+    );
   };
 
   // -------------------------
