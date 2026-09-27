@@ -18,7 +18,6 @@ function App() {
   const [documentsLoading, setDocumentsLoading] = useState(false);
   const [documentsError, setDocumentsError] = useState("");
 
-  // Delete PDF states
   const [deletingFile, setDeletingFile] = useState(null);
   const [deleteMessage, setDeleteMessage] = useState("");
   const [deleteError, setDeleteError] = useState(false);
@@ -187,13 +186,9 @@ function App() {
   // -------------------------
 
   const deletePDF = async (fileName) => {
-    // Ask confirmation before deleting
-
     const confirmed = window.confirm(
       `Are you sure you want to permanently delete "${fileName}"?\n\nThis will remove the PDF and its indexed content from EvidenceAI.`
     );
-
-    // Stop if user clicks Cancel
 
     if (!confirmed) {
       return;
@@ -217,13 +212,9 @@ function App() {
         throw new Error(data.detail || "Failed to delete PDF.");
       }
 
-      // Show success message
-
       setDeleteMessage(
         `"${fileName}" was deleted successfully.`
       );
-
-      // Refresh document library and dashboard statistics
 
       await fetchDocuments();
     } catch (error) {
@@ -463,27 +454,52 @@ function App() {
 
               {sources.length > 0 && (
                 <section className="sources-card">
-                  <h2>Verified Sources</h2>
 
-                  {sources.map((source, index) => (
-                    <div className="source" key={index}>
-                      <strong>
-                        {source.title ||
-                          source.file_name ||
-                          "Document"}
-                      </strong>
+                  <div className="sources-heading">
+                    <h2>Verified Sources</h2>
 
-                      {source.page_number && (
-                        <span className="source-page">
-                          Page {source.page_number}
-                        </span>
-                      )}
+                    <span className="source-count">
+                      {sources.length}{" "}
+                      {sources.length === 1
+                        ? "Source"
+                        : "Sources"}
+                    </span>
+                  </div>
 
-                      <small className="source-file">
-                        {source.file_name}
-                      </small>
-                    </div>
-                  ))}
+                  <p className="sources-description">
+                    The following documents support the generated answer.
+                  </p>
+
+                  <div className="sources-list">
+
+                    {sources.map((source, index) => (
+                      <div className="source" key={index}>
+
+                        <div className="source-icon">
+                          PDF
+                        </div>
+
+                        <div className="source-details">
+
+                          <strong className="source-title">
+                            {source.file_name ||
+                              source.title ||
+                              "Document"}
+                          </strong>
+
+                          {source.page_number != null && (
+                            <span className="source-page">
+                              <span>Page</span>{" "}
+                              {source.page_number}
+                            </span>
+                          )}
+
+                        </div>
+
+                      </div>
+                    ))}
+
+                  </div>
                 </section>
               )}
 
