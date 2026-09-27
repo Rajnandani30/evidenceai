@@ -507,36 +507,77 @@ function App() {
 
                   <p className="sources-description">
                     The following documents support the generated answer.
+                    Click a source to open the PDF at the cited page.
                   </p>
 
                   <div className="sources-list">
 
-                    {sources.map((source, index) => (
-                      <div className="source" key={index}>
+                    {sources.map((source, index) => {
+                      // Get the PDF filename
+                      const sourceFileName =
+                        source.file_name || source.title || "";
 
-                        <div className="source-icon">
-                          PDF
-                        </div>
+                      // Get the cited page number
+                      const sourcePage =
+                        source.page_number != null
+                          ? source.page_number
+                          : 1;
 
-                        <div className="source-details">
+                      // Build the PDF URL
+                      const sourcePdfUrl = sourceFileName
+                        ? `${API_URL}/documents/${encodeURIComponent(
+                            sourceFileName
+                          )}/pdf#page=${sourcePage}`
+                        : null;
 
-                          <strong className="source-title">
-                            {source.file_name ||
-                              source.title ||
-                              "Document"}
-                          </strong>
+                      return (
+                        <a
+                          className="source source-clickable"
+                          key={`${sourceFileName}-${sourcePage}-${index}`}
+                          href={sourcePdfUrl || undefined}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          title={
+                            sourcePdfUrl
+                              ? `Open ${sourceFileName}, page ${sourcePage}`
+                              : "Source PDF filename is unavailable"
+                          }
+                          onClick={(event) => {
+                            if (!sourcePdfUrl) {
+                              event.preventDefault();
+                            }
+                          }}
+                          style={{
+                            textDecoration: "none",
+                            color: "inherit",
+                            cursor: sourcePdfUrl
+                              ? "pointer"
+                              : "default",
+                          }}
+                        >
+                          <div className="source-icon">
+                            PDF
+                          </div>
 
-                          {source.page_number != null && (
-                            <span className="source-page">
-                              <span>Page</span>{" "}
-                              {source.page_number}
-                            </span>
-                          )}
+                          <div className="source-details">
 
-                        </div>
+                            <strong className="source-title">
+                              {source.file_name ||
+                                source.title ||
+                                "Document"}
+                            </strong>
 
-                      </div>
-                    ))}
+                            {source.page_number != null && (
+                              <span className="source-page">
+                                <span>Page</span>{" "}
+                                {source.page_number}
+                              </span>
+                            )}
+
+                          </div>
+                        </a>
+                      );
+                    })}
 
                   </div>
                 </section>

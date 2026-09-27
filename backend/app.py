@@ -1,10 +1,12 @@
 import re
+
 from pathlib import Path
 from threading import Lock
 from uuid import uuid4
 
 from fastapi import FastAPI, File, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse
 from pydantic import BaseModel
 
 from backend.ingestion.pdf_ingest import ingest_pdf
@@ -19,7 +21,7 @@ from backend.generation.llm import generate_answer
 app = FastAPI(
     title="EvidenceAI API",
     description="Hybrid-search RAG API with citation verification",
-    version="1.3.0"
+    version="1.4.0"
 )
 
 
@@ -90,6 +92,7 @@ search_engine = PDFHybridSearch(chunks)
 # -------------------------
 
 class QueryRequest(BaseModel):
+
     question: str
 
 
@@ -152,15 +155,69 @@ def get_documents():
         for document in documents.values():
 
             document_list.append({
+
                 "file_name": document["file_name"],
-                "pages": len(document["pages"]),
+
+                "pages": len(
+                    document["pages"]
+                ),
+
                 "chunks": document["chunks"]
+
             })
 
     return {
+
         "total_documents": len(document_list),
+
         "documents": document_list
+
     }
+
+
+# -------------------------
+# View PDF
+# -------------------------
+
+@app.get("/documents/{file_name}/pdf")
+def view_pdf(file_name: str):
+
+    # Prevent directory traversal
+    safe_name = Path(file_name).name
+
+    if (
+        safe_name != file_name
+        or not safe_name.lower().endswith(".pdf")
+    ):
+
+        raise HTTPException(
+            status_code=400,
+            detail="Invalid PDF filename."
+        )
+
+    # Locate the requested PDF
+    file_path = PDF_FOLDER / safe_name
+
+    # Check whether the PDF exists
+    if not file_path.is_file():
+
+        raise HTTPException(
+            status_code=404,
+            detail="PDF not found."
+        )
+
+    # Return the PDF for browser viewing
+    return FileResponse(
+
+        path=file_path,
+
+        media_type="application/pdf",
+
+        headers={
+            "Content-Disposition": "inline"
+        }
+
+    )
 
 
 # -------------------------
@@ -176,7 +233,11 @@ def upload_pdf(
 
     # Check the uploaded file extension
 
-    if not file.filename or not file.filename.lower().endswith(".pdf"):
+    if (
+        not file.filename
+        or not file.filename.lower().endswith(".pdf")
+    ):
+
         raise HTTPException(
             status_code=400,
             detail="Only PDF files are allowed."
@@ -199,6 +260,7 @@ def upload_pdf(
         contents = file.file.read()
 
         if not contents:
+
             raise HTTPException(
                 status_code=400,
                 detail="The uploaded file is empty."
@@ -212,6 +274,7 @@ def upload_pdf(
         )
 
         with open(file_path, "wb") as pdf_file:
+
             pdf_file.write(contents)
 
         # Extract text and create chunks
@@ -221,6 +284,7 @@ def upload_pdf(
         )
 
         if not new_chunks:
+
             raise HTTPException(
                 status_code=400,
                 detail="No readable text found in the PDF."
@@ -237,6 +301,7 @@ def upload_pdf(
             )
 
             chunks = updated_chunks
+
             search_engine = updated_search_engine
 
             documents_loaded = len(
@@ -247,22 +312,30 @@ def upload_pdf(
             )
 
         return {
+
             "message": "PDF uploaded and indexed successfully.",
+
             "file_name": safe_name,
+
             "pages_processed": len(
                 set(
                     chunk["page_number"]
                     for chunk in new_chunks
                 )
             ),
+
             "chunks_created": len(new_chunks),
+
             "documents_loaded": documents_loaded
+
         }
 
     except HTTPException:
+
         # Remove invalid uploaded files
 
         if file_path.exists():
+
             file_path.unlink()
 
         raise
@@ -270,16 +343,20 @@ def upload_pdf(
     except Exception as error:
 
         if file_path.exists():
+
             file_path.unlink()
 
         raise HTTPException(
+
             status_code=500,
+
             detail=f"PDF upload failed: {str(error)}"
+
         )
 
     finally:
-        file.file.close()
 
+        file.file.close()
 
 
 # -------------------------
@@ -294,35 +371,58 @@ def ask_question(request: QueryRequest):
     query = request.question.strip()
 
     if not query:
+
         raise HTTPException(
             status_code=400,
             detail="Question cannot be empty."
         )
 
+    # -------------------------
     # Detect a PDF filename in the question
+    # -------------------------
+
     filename_match = re.search(
-        r'(?:named|in|from|about)\s+["\']?([A-Za-z0-9_.-]+\.pdf)',
+
+        r"(?:(?:named|in|from|about)\s+['\"]?([A-Za-z0-9_.-]+\.pdf))",
+
         query,
+
         re.IGNORECASE
+
     )
 
     # Also support questions that contain only a filename
+
     if not filename_match:
+
         filename_match = re.search(
-            r'\b([A-Za-z0-9_.-]+\.pdf)\b',
+
+            r"\b([A-Za-z0-9_.-]+\.pdf)\b",
+
             query,
+
             re.IGNORECASE
+
         )
 
     requested_filename = (
+
         filename_match.group(1)
+
         if filename_match
+
         else None
+
     )
 
+    # -------------------------
     # Get the current knowledge base safely
+    # -------------------------
+
     with knowledge_base_lock:
+
         current_chunks = list(chunks)
+
         current_search_engine = search_engine
 
     # -------------------------
@@ -332,45 +432,70 @@ def ask_question(request: QueryRequest):
     if requested_filename:
 
         matching_chunks = [
+
             chunk
+
             for chunk in current_chunks
+
             if chunk["file_name"].lower()
             == requested_filename.lower()
+
         ]
 
         if not matching_chunks:
+
             raise HTTPException(
+
                 status_code=404,
+
                 detail=(
+
                     f"PDF '{requested_filename}' "
+
                     "was not found in the library."
+
                 )
+
             )
 
         print(
+
             f"Searching only in PDF: "
+
             f"{requested_filename}"
+
         )
 
         # Remove the filename from the search query
+
         search_query = re.sub(
+
             re.escape(requested_filename),
+
             "",
+
             query,
+
             flags=re.IGNORECASE
+
         ).strip()
 
         if not search_query:
+
             search_query = query
 
         # Build a search engine for the selected PDF only
+
         document_search_engine = PDFHybridSearch(
             matching_chunks
         )
 
         results = document_search_engine.search(
+
             search_query,
+
             top_k=5
+
         )
 
     # -------------------------
@@ -380,8 +505,11 @@ def ask_question(request: QueryRequest):
     else:
 
         results = current_search_engine.search(
+
             query,
+
             top_k=5
+
         )
 
     # -------------------------
@@ -389,16 +517,23 @@ def ask_question(request: QueryRequest):
     # -------------------------
 
     print("\n========== RETRIEVAL DEBUG ==========")
+
     print("Question:", query)
+
     print("Requested PDF:", requested_filename)
+
     print("Number of retrieved results:", len(results))
 
     for i, result in enumerate(results, start=1):
 
         print(f"\n--- Result {i} ---")
+
         print("File:", result.get("file_name"))
+
         print("Page:", result.get("page_number"))
+
         print("Score:", result.get("hybrid_score"))
+
         print("Text:", result.get("text", "")[:500])
 
     print("\n========== END RETRIEVAL DEBUG ==========\n")
@@ -408,12 +543,19 @@ def ask_question(request: QueryRequest):
     # -------------------------
 
     answer, verified_sources = generate_answer(
+
         query,
+
         results
+
     )
 
     return {
+
         "question": query,
+
         "answer": answer,
+
         "verified_sources": verified_sources
+
     }
