@@ -1,0 +1,32 @@
+{
+    "total_tests": 3,
+    "average_metrics": {
+        "retrieval_precision": 0.467,
+        "answer_coverage": 0.889,
+        "citation_accuracy": 1.0,
+        "response_time_seconds": 1.254
+    },
+    "individual_results": [
+        {
+            "question": "What is artificial intelligence?",
+            "retrieval_precision": 0.2,
+            "answer_coverage": 0.667,
+            "citation_accuracy": 1.0,
+            "response_time_seconds": 1.518
+        },
+        {
+            "question": "What is machine learning?",
+            "retrieval_precision": 0.8,
+            "answer_coverage": 1.0,
+            "citation_accuracy": 1.0,
+            "response_time_seconds": 1.204
+        },
+        {
+            "question": "What is deep learning?",
+            "retrieval_precision": 0.4,
+            "answer_coverage": 1.0,
+            "citation_accuracy": 1.0,
+            "response_time_seconds": 1.04
+        }
+    ]
+}
