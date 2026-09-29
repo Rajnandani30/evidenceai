@@ -358,6 +358,85 @@ def upload_pdf(
 
         file.file.close()
 
+        # -------------------------
+# Delete PDF
+# -------------------------
+
+@app.delete("/documents/{file_name}")
+def delete_pdf(file_name: str):
+
+    global chunks, search_engine
+
+    # Prevent directory traversal
+    safe_name = Path(file_name).name
+
+    if (
+        safe_name != file_name
+        or not safe_name.lower().endswith(".pdf")
+    ):
+        raise HTTPException(
+            status_code=400,
+            detail="Invalid PDF filename."
+        )
+
+    file_path = PDF_FOLDER / safe_name
+
+    # Protect knowledge base updates
+    with knowledge_base_lock:
+
+        # Check whether the PDF exists
+        if not file_path.is_file():
+            raise HTTPException(
+                status_code=404,
+                detail="PDF not found."
+            )
+
+        # Remove all chunks belonging to this PDF
+        updated_chunks = [
+            chunk
+            for chunk in chunks
+            if chunk.get("file_name") != safe_name
+        ]
+
+        # Rebuild the search engine without the deleted PDF
+        try:
+            updated_search_engine = PDFHybridSearch(
+                updated_chunks
+            )
+
+        except Exception as error:
+            raise HTTPException(
+                status_code=500,
+                detail=f"Failed to rebuild search index: {str(error)}"
+            )
+
+        # Delete the PDF from disk
+        try:
+            file_path.unlink()
+
+        except OSError as error:
+            raise HTTPException(
+                status_code=500,
+                detail=f"Failed to delete PDF: {str(error)}"
+            )
+
+        # Update the in-memory knowledge base
+        chunks = updated_chunks
+        search_engine = updated_search_engine
+
+        documents_loaded = len(
+            set(
+                chunk["file_name"]
+                for chunk in chunks
+            )
+        )
+
+    return {
+        "message": "PDF deleted successfully.",
+        "file_name": safe_name,
+        "documents_loaded": documents_loaded
+    }
+
 
 # -------------------------
 # Ask EvidenceAI
