@@ -1,10 +1,10 @@
 {
     "total_tests": 6,
     "average_metrics": {
-        "retrieval_precision": 0.467,
-        "answer_coverage": 0.889,
+        "retrieval_precision": 0.533,
+        "answer_coverage": 0.945,
         "citation_accuracy": 1.0,
-        "response_time_seconds": 14.722
+        "response_time_seconds": 13.861
     },
     "individual_results": [
         {
@@ -12,42 +12,42 @@
             "retrieval_precision": 0.2,
             "answer_coverage": 1.0,
             "citation_accuracy": 1.0,
-            "response_time_seconds": 8.488
+            "response_time_seconds": 10.505
         },
         {
             "question": "How do machine learning systems learn?",
-            "retrieval_precision": 0.4,
+            "retrieval_precision": 0.8,
             "answer_coverage": 1.0,
             "citation_accuracy": 1.0,
-            "response_time_seconds": 1.942
+            "response_time_seconds": 6.612
         },
         {
             "question": "What type of neural networks does deep learning use?",
             "retrieval_precision": 0.4,
             "answer_coverage": 1.0,
             "citation_accuracy": 1.0,
-            "response_time_seconds": 14.666
+            "response_time_seconds": 30.025
         },
         {
             "question": "What is the purpose of Retrieval Augmented Generation?",
             "retrieval_precision": 1.0,
-            "answer_coverage": 0.333,
+            "answer_coverage": 0.667,
             "citation_accuracy": 1.0,
-            "response_time_seconds": 13.894
+            "response_time_seconds": 8.001
         },
         {
             "question": "How much direct sunlight do most edible plants need?",
             "retrieval_precision": 0.2,
             "answer_coverage": 1.0,
             "citation_accuracy": 1.0,
-            "response_time_seconds": 36.449
+            "response_time_seconds": 17.595
         },
         {
             "question": "Why should gardening containers have drainage holes?",
             "retrieval_precision": 0.6,
             "answer_coverage": 1.0,
             "citation_accuracy": 1.0,
-            "response_time_seconds": 12.892
+            "response_time_seconds": 10.43
         }
     ]
 }

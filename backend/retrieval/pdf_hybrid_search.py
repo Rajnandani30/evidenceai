@@ -1,3 +1,4 @@
+
 from backend.ingestion.pdf_ingest import ingest_pdf
 from backend.retrieval.pdf_bm25_search import PDFBM25Search
 from backend.retrieval.embeddings import generate_embeddings
@@ -98,7 +99,6 @@ class PDFHybridSearch:
         for index in range(len(self.chunks)):
 
             bm25_rank = bm25_ranks.get(index)
-
             vector_rank = vector_ranks.get(index)
 
             bm25_score = (
@@ -108,15 +108,12 @@ class PDFHybridSearch:
             )
 
             vector_score = (
-                (1 - bm25_weight)
-                / (rrf_k + vector_rank)
+                (1 - bm25_weight) / (rrf_k + vector_rank)
                 if vector_rank is not None
                 else 0.0
             )
 
-            hybrid_score = (
-                bm25_score + vector_score
-            )
+            hybrid_score = bm25_score + vector_score
 
             chunk = self.chunks[index]
 
@@ -154,14 +151,26 @@ class PDFHybridSearch:
         # 4. Cross-Encoder Reranking
         # -------------------------
 
-        candidates = hybrid_results[:top_k]
+        # Retrieve a larger candidate pool before reranking.
+        # Use up to 20 candidates, or fewer if there are
+        # fewer chunks in the document collection.
+
+        candidate_k = min(
+            20,
+            len(hybrid_results)
+        )
+
+        candidates = hybrid_results[:candidate_k]
 
         reranked_results = rerank(
             query,
             candidates
         )
 
-        return reranked_results
+        # Return only the final top_k results,
+        # sorted by cross-encoder relevance score.
+
+        return reranked_results[:top_k]
 
 
 if __name__ == "__main__":
