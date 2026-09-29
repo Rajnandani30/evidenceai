@@ -2,7 +2,6 @@ from backend.ingestion.pdf_ingest import ingest_pdf
 from backend.retrieval.pdf_bm25_search import PDFBM25Search
 from backend.retrieval.embeddings import generate_embeddings
 from backend.retrieval.vector_store import VectorStore
-from backend.retrieval.scoring import normalize_scores
 from backend.retrieval.reranker import rerank
 
 
@@ -45,7 +44,7 @@ class PDFHybridSearch:
     ):
 
         # -------------------------
-        # BM25 Search
+        # 1. BM25 Ranking
         # -------------------------
 
         bm25_results = self.bm25_search.search(
@@ -53,26 +52,17 @@ class PDFHybridSearch:
             top_k=len(self.chunks)
         )
 
-        bm25_scores = [
-            result["score"]
-            for result in bm25_results
-        ]
+        bm25_ranks = {}
 
-        normalized_bm25 = normalize_scores(
-            bm25_scores
-        )
-
-        bm25_lookup = {}
-
-        for result, score in zip(
+        for rank, result in enumerate(
             bm25_results,
-            normalized_bm25
+            start=1
         ):
 
-            bm25_lookup[result["index"]] = score
+            bm25_ranks[result["index"]] = rank
 
         # -------------------------
-        # Vector Search
+        # 2. Vector Search Ranking
         # -------------------------
 
         query_embedding = generate_embeddings(
@@ -84,80 +74,84 @@ class PDFHybridSearch:
             top_k=len(self.chunks)
         )
 
-        vector_distances = list(
-            distances[0]
-        )
+        vector_ranks = {}
 
-        normalized_vector = normalize_scores(
-            vector_distances,
-            reverse=True
-        )
-
-        vector_lookup = {}
-
-        for index, score in zip(
+        for rank, index in enumerate(
             indices[0],
-            normalized_vector
+            start=1
         ):
 
-            vector_lookup[int(index)] = score
+            index = int(index)
+
+            if 0 <= index < len(self.chunks):
+
+                vector_ranks[index] = rank
 
         # -------------------------
-        # Combine Scores
+        # 3. Reciprocal Rank Fusion
         # -------------------------
+
+        rrf_k = 60
 
         hybrid_results = []
 
-        for index in range(
-            len(self.chunks)
-        ):
+        for index in range(len(self.chunks)):
 
-            bm25_score = bm25_lookup.get(
-                index,
-                0.0
+            bm25_rank = bm25_ranks.get(index)
+
+            vector_rank = vector_ranks.get(index)
+
+            bm25_score = (
+                bm25_weight / (rrf_k + bm25_rank)
+                if bm25_rank is not None
+                else 0.0
             )
 
-            vector_score = vector_lookup.get(
-                index,
-                0.0
+            vector_score = (
+                (1 - bm25_weight)
+                / (rrf_k + vector_rank)
+                if vector_rank is not None
+                else 0.0
             )
 
             hybrid_score = (
-                bm25_weight * bm25_score
-                +
-                (1 - bm25_weight)
-                * vector_score
+                bm25_score + vector_score
             )
 
-            hybrid_results.append(
-                {
-                    "index": index,
+            chunk = self.chunks[index]
 
-                    # PDF metadata
-                    "title": self.chunks[index]["title"],
-                    "author": self.chunks[index]["author"],
-                    "file_name": self.chunks[index]["file_name"],
-                    "page_number": self.chunks[index]["page_number"],
-                    "source": self.chunks[index]["source"],
+            hybrid_results.append({
 
-                    # Evidence text
-                    "text": self.chunks[index]["text"],
+                "index": index,
 
-                    # Retrieval scores
-                    "bm25_score": bm25_score,
-                    "vector_score": vector_score,
-                    "hybrid_score": hybrid_score,
-                }
-            )
+                # PDF metadata
+                "title": chunk["title"],
+                "author": chunk["author"],
+                "file_name": chunk["file_name"],
+                "page_number": chunk["page_number"],
+                "source": chunk["source"],
+
+                # Evidence text
+                "text": chunk["text"],
+
+                # Retrieval scores
+                "bm25_score": bm25_score,
+                "vector_score": vector_score,
+                "hybrid_score": hybrid_score,
+
+                # Ranking information
+                "bm25_rank": bm25_rank,
+                "vector_rank": vector_rank,
+
+            })
 
         hybrid_results.sort(
-            key=lambda result:
-                result["hybrid_score"],
+            key=lambda result: result["hybrid_score"],
             reverse=True
         )
 
         # -------------------------
-        # Cross-Encoder Reranking
+        # 4. Cross-Encoder Reranking
         # -------------------------
 
         candidates = hybrid_results[:top_k]
@@ -174,13 +168,9 @@ if __name__ == "__main__":
 
     pdf_path = "data/pdf_documents/sample.pdf"
 
-    chunks = ingest_pdf(
-        pdf_path
-    )
+    chunks = ingest_pdf(pdf_path)
 
-    search_engine = PDFHybridSearch(
-        chunks
-    )
+    search_engine = PDFHybridSearch(chunks)
 
     results = search_engine.search(
         "retrieval augmented generation",
@@ -188,48 +178,32 @@ if __name__ == "__main__":
     )
 
     print(
-        "PDF HYBRID SEARCH + RERANKING RESULTS:"
+        "PDF HYBRID SEARCH + RRF + RERANKING RESULTS:"
     )
 
     for result in results:
 
+        print(f"\nTitle: {result['title']}")
+        print(f"Author: {result['author']}")
+        print(f"Page: {result['page_number']}")
+        print(f"Source: {result['source']}")
+
         print(
-            f"\nTitle: {result['title']}"
+            f"BM25 Rank: {result['bm25_rank']}"
         )
 
         print(
-            f"Author: {result['author']}"
+            f"Vector Rank: {result['vector_rank']}"
         )
 
         print(
-            f"Page: {result['page_number']}"
+            f"RRF Score: {result['hybrid_score']:.6f}"
         )
 
         print(
-            f"Source: {result['source']}"
+            f"Rerank Score: {result['rerank_score']:.4f}"
         )
 
         print(
-            f"BM25 Score: "
-            f"{result['bm25_score']:.4f}"
-        )
-
-        print(
-            f"Vector Score: "
-            f"{result['vector_score']:.4f}"
-        )
-
-        print(
-            f"Hybrid Score: "
-            f"{result['hybrid_score']:.4f}"
-        )
-
-        print(
-            f"Rerank Score: "
-            f"{result['rerank_score']:.4f}"
-        )
-
-        print(
-            f"Text: "
-            f"{result['text'][:250]}..."
+            f"Text: {result['text'][:250]}..."
         )

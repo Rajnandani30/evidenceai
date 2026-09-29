@@ -1,3 +1,4 @@
+
 from sentence_transformers import CrossEncoder
 
 
@@ -7,7 +8,7 @@ model = CrossEncoder(MODEL_NAME)
 
 
 def rerank(query, documents):
-
+    # Compare the query with each candidate document
     pairs = [
         [query, document["text"]]
         for document in documents
@@ -18,13 +19,13 @@ def rerank(query, documents):
     ranked_documents = []
 
     for document, score in zip(documents, scores):
-
         result = document.copy()
 
         result["rerank_score"] = float(score)
 
         ranked_documents.append(result)
 
+    # Sort by Cross-Encoder relevance score
     ranked_documents.sort(
         key=lambda document: document["rerank_score"],
         reverse=True

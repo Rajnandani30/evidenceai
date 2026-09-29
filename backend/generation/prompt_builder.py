@@ -1,4 +1,3 @@
-
 def build_rag_prompt(query, documents):
 
     context_parts = []
@@ -48,7 +47,7 @@ def build_rag_prompt(query, documents):
 
             source_label = title
 
-        # Combine the retrieved chunks from the same page.
+        # Combine retrieved chunks from the same page.
         combined_text = "\n\n".join(
             source["texts"]
         )
@@ -60,6 +59,7 @@ def build_rag_prompt(query, documents):
 
     context = "\n\n".join(context_parts)
 
+    # Build the RAG prompt.
     prompt = f"""
 You are EvidenceAI, an evidence-based
 question answering assistant.
@@ -85,17 +85,17 @@ Instructions:
 - Give a clear and concise answer.
 - Use only information supported by
   the retrieved sources.
-- Cite factual claims using the source
+- Cite every factual claim using the source
   number assigned in Retrieved Sources.
-- When available, include the PDF
-  title and page number in the citation.
-- Use the exact source title and page
-  shown in the Retrieved Sources section.
-- Do not invent source numbers.
-- Do not cite information that is not
-  supported by the sources.
-- If the evidence is insufficient,
-  clearly say so.
+- Use the exact source title and page number
+  shown in Retrieved Sources.
+- Each citation must be written separately.
+- Never combine multiple sources inside one
+  citation bracket.
+- Do not invent source numbers, titles, or pages.
+- Do not cite information that is not supported
+  by the retrieved evidence.
+- If the evidence is insufficient, clearly say so.
 
 Citation format:
 
@@ -106,6 +106,12 @@ Example:
 RAG combines retrieval with generation
 to provide answers grounded in external
 information [Source 1: Example PDF, Page 2].
+
+If two sources support a claim, write:
+
+RAG uses retrieved evidence to generate answers
+[Source 1: Example PDF, Page 2]
+[Source 2: Another PDF, Page 4].
 """
 
     return prompt
