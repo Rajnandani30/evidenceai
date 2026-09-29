@@ -9,54 +9,6 @@ documents currently loaded in the project.
 EVALUATION_DATASET = [
 
     # ---------------------------------
-    # 1. Solar System
-    # ---------------------------------
-    {
-        "question": "How many planets are in the Solar System?",
-        "expected_keywords": [
-            "eight planets",
-            "Solar System",
-        ],
-        "relevant_keywords": [
-            "eight planets",
-            "Solar System",
-        ],
-    },
-
-    # ---------------------------------
-    # 2. Earth
-    # ---------------------------------
-    {
-        "question": "What percentage of Earth's surface is covered by water?",
-        "expected_keywords": [
-            "71 percent",
-            "water",
-        ],
-        "relevant_keywords": [
-            "Earth",
-            "71 percent",
-            "water",
-        ],
-    },
-
-    # ---------------------------------
-    # 3. Mars
-    # ---------------------------------
-    {
-        "question": "Why is Mars called the Red Planet?",
-        "expected_keywords": [
-            "Red Planet",
-            "iron minerals",
-            "reddish color",
-        ],
-        "relevant_keywords": [
-            "Mars",
-            "iron minerals",
-            "reddish color",
-        ],
-    },
-
-    # ---------------------------------
     # 4. Artificial Intelligence
     # ---------------------------------
     {
@@ -157,22 +109,6 @@ EVALUATION_DATASET = [
         ],
     },
 
-    # ---------------------------------
-    # 10. Python Programming
-    # ---------------------------------
-    {
-        "question": "Why is Python useful for programming and IoT?",
-        "expected_keywords": [
-            "Python",
-            "easy to read",
-            "hardware platforms",
-        ],
-        "relevant_keywords": [
-            "Python",
-            "hardware platforms",
-            "open-source",
-            "programming",
-        ],
-    },
+    
 
 ]

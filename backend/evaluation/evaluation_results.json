@@ -1,81 +1,53 @@
 {
-    "total_tests": 10,
+    "total_tests": 6,
     "average_metrics": {
-        "retrieval_precision": 0.64,
-        "answer_coverage": 1.0,
-        "citation_accuracy": 0.775,
-        "response_time_seconds": 1.224
+        "retrieval_precision": 0.467,
+        "answer_coverage": 0.889,
+        "citation_accuracy": 1.0,
+        "response_time_seconds": 14.722
     },
     "individual_results": [
-        {
-            "question": "How many planets are in the Solar System?",
-            "retrieval_precision": 0.8,
-            "answer_coverage": 1.0,
-            "citation_accuracy": 0.0,
-            "response_time_seconds": 1.186
-        },
-        {
-            "question": "What percentage of Earth's surface is covered by water?",
-            "retrieval_precision": 0.8,
-            "answer_coverage": 1.0,
-            "citation_accuracy": 0.0,
-            "response_time_seconds": 1.306
-        },
-        {
-            "question": "Why is Mars called the Red Planet?",
-            "retrieval_precision": 1.0,
-            "answer_coverage": 1.0,
-            "citation_accuracy": 1.0,
-            "response_time_seconds": 1.036
-        },
         {
             "question": "What is artificial intelligence?",
             "retrieval_precision": 0.2,
             "answer_coverage": 1.0,
             "citation_accuracy": 1.0,
-            "response_time_seconds": 1.113
+            "response_time_seconds": 8.488
         },
         {
             "question": "How do machine learning systems learn?",
             "retrieval_precision": 0.4,
             "answer_coverage": 1.0,
             "citation_accuracy": 1.0,
-            "response_time_seconds": 1.446
+            "response_time_seconds": 1.942
         },
         {
             "question": "What type of neural networks does deep learning use?",
             "retrieval_precision": 0.4,
             "answer_coverage": 1.0,
             "citation_accuracy": 1.0,
-            "response_time_seconds": 1.16
+            "response_time_seconds": 14.666
         },
         {
             "question": "What is the purpose of Retrieval Augmented Generation?",
             "retrieval_precision": 1.0,
-            "answer_coverage": 1.0,
-            "citation_accuracy": 0.75,
-            "response_time_seconds": 1.346
+            "answer_coverage": 0.333,
+            "citation_accuracy": 1.0,
+            "response_time_seconds": 13.894
         },
         {
             "question": "How much direct sunlight do most edible plants need?",
             "retrieval_precision": 0.2,
             "answer_coverage": 1.0,
             "citation_accuracy": 1.0,
-            "response_time_seconds": 1.21
+            "response_time_seconds": 36.449
         },
         {
             "question": "Why should gardening containers have drainage holes?",
             "retrieval_precision": 0.6,
             "answer_coverage": 1.0,
             "citation_accuracy": 1.0,
-            "response_time_seconds": 1.12
-        },
-        {
-            "question": "Why is Python useful for programming and IoT?",
-            "retrieval_precision": 1.0,
-            "answer_coverage": 1.0,
-            "citation_accuracy": 1.0,
-            "response_time_seconds": 1.321
+            "response_time_seconds": 12.892
         }
     ]
 }
