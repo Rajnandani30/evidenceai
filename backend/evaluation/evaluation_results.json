@@ -2,9 +2,9 @@
     "total_tests": 12,
     "average_metrics": {
         "retrieval_precision": 0.517,
-        "answer_coverage": 0.778,
+        "answer_coverage": 0.861,
         "citation_accuracy": 1.0,
-        "response_time_seconds": 1.598
+        "response_time_seconds": 1.716
     },
     "individual_results": [
         {
@@ -12,84 +12,84 @@
             "retrieval_precision": 0.2,
             "answer_coverage": 1.0,
             "citation_accuracy": 1.0,
-            "response_time_seconds": 1.695
+            "response_time_seconds": 2.327
         },
         {
             "question": "How do machine learning systems learn?",
             "retrieval_precision": 0.8,
             "answer_coverage": 1.0,
             "citation_accuracy": 1.0,
-            "response_time_seconds": 1.575
+            "response_time_seconds": 1.615
         },
         {
             "question": "What type of neural networks does deep learning use?",
             "retrieval_precision": 0.4,
             "answer_coverage": 1.0,
             "citation_accuracy": 1.0,
-            "response_time_seconds": 1.592
+            "response_time_seconds": 1.633
         },
         {
             "question": "What is the purpose of Retrieval Augmented Generation?",
             "retrieval_precision": 1.0,
             "answer_coverage": 0.667,
             "citation_accuracy": 1.0,
-            "response_time_seconds": 2.311
+            "response_time_seconds": 2.837
         },
         {
             "question": "How much direct sunlight do most edible plants need?",
             "retrieval_precision": 0.2,
             "answer_coverage": 1.0,
             "citation_accuracy": 1.0,
-            "response_time_seconds": 1.389
+            "response_time_seconds": 1.673
         },
         {
             "question": "Why should gardening containers have drainage holes?",
             "retrieval_precision": 0.6,
             "answer_coverage": 1.0,
             "citation_accuracy": 1.0,
-            "response_time_seconds": 1.513
+            "response_time_seconds": 1.36
         },
         {
             "question": "What role does training data play in machine learning?",
             "retrieval_precision": 0.4,
-            "answer_coverage": 0.667,
+            "answer_coverage": 1.0,
             "citation_accuracy": 1.0,
-            "response_time_seconds": 1.377
+            "response_time_seconds": 1.575
         },
         {
             "question": "How do multiple layers help a deep learning model?",
             "retrieval_precision": 0.2,
             "answer_coverage": 0.667,
             "citation_accuracy": 1.0,
-            "response_time_seconds": 1.305
+            "response_time_seconds": 1.235
         },
         {
             "question": "How does retrieval help a language model answer questions?",
             "retrieval_precision": 1.0,
-            "answer_coverage": 0.667,
+            "answer_coverage": 1.0,
             "citation_accuracy": 1.0,
-            "response_time_seconds": 1.684
+            "response_time_seconds": 1.71
         },
         {
             "question": "Why is sunlight important for edible plants?",
             "retrieval_precision": 0.2,
             "answer_coverage": 0.667,
             "citation_accuracy": 1.0,
-            "response_time_seconds": 1.546
+            "response_time_seconds": 1.454
         },
         {
             "question": "What can happen if excess water cannot drain from a plant container?",
             "retrieval_precision": 0.4,
             "answer_coverage": 0.667,
             "citation_accuracy": 1.0,
-            "response_time_seconds": 1.592
+            "response_time_seconds": 1.442
         },
         {
             "question": "How can artificial intelligence recognize patterns in information?",
             "retrieval_precision": 0.8,
-            "answer_coverage": 0.333,
+            "answer_coverage": 0.667,
             "citation_accuracy": 1.0,
-            "response_time_seconds": 1.603
+            "response_time_seconds": 1.727
         }
     ]
 }

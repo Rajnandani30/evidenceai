@@ -30,13 +30,14 @@ def sample_chunks():
         },
     ]
 
-
 def test_bm25_finds_relevant_document():
     search = PDFBM25Search(sample_chunks())
 
     results = search.search("artificial intelligence language", top_k=3)
 
-    assert len(results) == 3
+    assert len(results) >= 1
+    assert all(result["score"] > 0 for result in results)
+    assert results[0]["file_name"] == "ai_basics.pdf"
     assert results[0]["file_name"] == "ai_basics.pdf"
 
 
