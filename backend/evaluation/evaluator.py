@@ -1,4 +1,3 @@
-
 from typing import List, Dict, Any
 from pathlib import Path
 import re
@@ -7,7 +6,7 @@ import re
 def normalize_text(text: str) -> str:
     """Normalize text for simple answer comparison."""
 
-    text = text.lower()
+    text = str(text or "").lower()
     text = re.sub(r"[^a-z0-9\s]", " ", text)
     text = re.sub(r"\s+", " ", text)
 
@@ -74,63 +73,60 @@ def calculate_citation_accuracy(
     verified_sources: List[Dict[str, Any]],
 ) -> float:
     """
-    Check whether citations in the answer match the
-    filename/title and page number of verified sources.
+    Check whether detected citations match verified source
+    numbers, filenames/titles, and page numbers.
 
-    Returns the fraction of detected citations that match
-    a verified source and its page.
-
-    This is a citation consistency metric. It does not
-    independently prove that the cited text supports
-    every factual claim.
+    This measures citation consistency. It does not independently
+    prove that a cited passage supports every factual claim.
     """
 
-    if not answer.strip() or not verified_sources:
+    if not answer or not answer.strip():
         return 0.0
 
-    # Matches citations such as:
+    # Match citations such as:
     # [Source 1: second, Page 1]
     # [Source 2: machine_learning.pdf, Page 3]
 
-    citation_pattern = (
-        r"\[Source\s+(\d+)\s*:\s*"
-        r"(.*?),\s*Page\s*(\d+)\]"
+    citation_pattern = re.compile(
+        r"\[\s*Source\s+(\d+)\s*:\s*"
+        r"(.*?)\s*,\s*Page\s+(\d+)\s*\]",
+        re.IGNORECASE,
     )
 
-    citations = re.findall(
-        citation_pattern,
-        answer,
-        flags=re.IGNORECASE,
-    )
+    citations = citation_pattern.findall(answer)
 
     if not citations:
         return 0.0
+
+    # Index sources by their ORIGINAL source numbers.
+    # Do not renumber the shortened verified source list.
+    verified_by_number = {
+        source["source_number"]: source
+        for source in verified_sources
+        if source.get("source_number") is not None
+    }
 
     verified_count = 0
 
     for source_number, cited_title, cited_page in citations:
 
-        source_index = int(source_number) - 1
+        citation_source_number = int(source_number)
         page_number = int(cited_page)
 
-        # Check that the citation refers to an existing
-        # verified source.
-        if not (
-            0 <= source_index < len(verified_sources)
-        ):
+        source = verified_by_number.get(
+            citation_source_number
+        )
+
+        # Reject citations that were not verified.
+        if source is None:
             continue
 
-        source = verified_sources[source_index]
-
-        # Read the actual verified source metadata.
         source_title = source.get("title", "")
-
         source_filename = source.get("file_name", "")
 
         source_page = source.get("page_number")
 
-        # Support citations using either the PDF title
-        # or the filename, with or without .pdf.
+        # Accept the title or filename, with or without .pdf.
         valid_names = {
             normalize_text(source_title),
             normalize_text(source_filename),
@@ -142,9 +138,11 @@ def calculate_citation_accuracy(
             ) if source_title else "",
         }
 
+        valid_names.discard("")
+
         cited_name = normalize_text(cited_title)
 
-        # Check both the source name and page number.
+        # Validate both the source name and page number.
         if (
             cited_name in valid_names
             and source_page is not None

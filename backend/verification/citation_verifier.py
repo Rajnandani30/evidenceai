@@ -1,4 +1,3 @@
-
 import re
 
 
@@ -47,18 +46,21 @@ def group_documents(documents):
         if text:
             grouped_sources[source_key]["texts"].append(text)
 
-    # Preserve the insertion order.
-    # This must match the order in prompt_builder.py.
+    # Preserve the insertion order to match prompt_builder.py.
 
     sources = []
 
-    for source in grouped_sources.values():
+    for source_number, source in enumerate(
+        grouped_sources.values(),
+        start=1
+    ):
 
         combined_text = "\n\n".join(
             source["texts"]
         )
 
         sources.append({
+            "source_number": source_number,
             "title": source["title"],
             "file_name": source["file_name"],
             "page_number": source["page_number"],
@@ -69,28 +71,23 @@ def group_documents(documents):
 
 
 def verify_citations(answer, documents):
+    """Verify citation numbers, names, pages, and basic evidence overlap."""
 
     verified_sources = []
 
     if not answer or not documents:
         return verified_sources
 
-    # Recreate the exact source list shown to Gemini.
-
+    # Recreate the exact ordered source list shown to Gemini.
     sources = group_documents(documents)
 
-    # Supports citations such as:
+    # Matches citations such as:
     # [Source 1: second.pdf, Page 1]
-    # [Source 1: The Solar System: A Basic Guide, Page 1]
-    #
-    # Also supports multiple sources inside one bracket:
-    # [Source 1: Example, Page 1; Source 2: Example, Page 2]
+    # [Source 2: Example Guide, Page 3]
 
     citation_pattern = re.compile(
         r"\[\s*Source\s+(\d+)\s*:\s*"
-        r"(.*?)"
-        r"(?:\s*,\s*Page\s+(\d+))?"
-        r"\s*(?=;|\])",
+        r"(.*?)\s*,\s*Page\s+(\d+)\s*\]",
         re.IGNORECASE
     )
 
@@ -116,9 +113,11 @@ def verify_citations(answer, documents):
 
         source_index = int(source_number) - 1
 
-        # Check that the source number exists.
+        # Check that the original source number exists.
 
-        if source_index < 0 or source_index >= len(sources):
+        if not (
+            0 <= source_index < len(sources)
+        ):
             continue
 
         source = sources[source_index]
@@ -139,18 +138,15 @@ def verify_citations(answer, documents):
 
         # Validate the page number.
 
-        if page_number:
+        actual_page = source.get("page_number")
 
-            actual_page = source.get("page_number")
+        if actual_page is None:
+            continue
 
-            if actual_page is None:
-                continue
+        if int(page_number) != int(actual_page):
+            continue
 
-            if int(page_number) != int(actual_page):
-                continue
-
-        # Check whether the answer has meaningful
-        # word overlap with the cited evidence.
+        # Check basic word overlap with the cited evidence.
 
         source_text = source.get(
             "text",
@@ -171,9 +167,9 @@ def verify_citations(answer, documents):
         if len(common_words) < 2:
             continue
 
-        # Add the verified source.
-
+        # Preserve the original source number.
         verified_source = {
+            "source_number": source["source_number"],
             "file_name": source.get("file_name")
         }
 

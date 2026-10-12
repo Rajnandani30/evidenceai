@@ -84,3 +84,29 @@ def test_invalid_source_number_is_rejected():
 
 def test_empty_answer_returns_no_sources():
     assert verify_citations("", [sample_document()]) == []
+
+def test_evaluator_preserves_original_source_numbers():
+    from backend.evaluation.evaluator import (
+        calculate_citation_accuracy,
+    )
+
+    answer = (
+        "The answer is supported "
+        "[Source 3: sample, Page 2]."
+    )
+
+    verified_sources = [
+        {
+            "source_number": 1,
+            "file_name": "second.pdf",
+            "title": "second",
+            "page_number": 1,
+        }
+    ]
+
+    score = calculate_citation_accuracy(
+        answer,
+        verified_sources,
+    )
+
+    assert score == 0.0
