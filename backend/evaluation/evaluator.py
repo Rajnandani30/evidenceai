@@ -13,10 +13,50 @@ def normalize_text(text: str) -> str:
     return text.strip()
 
 
+
 def calculate_retrieval_precision(
     retrieved_chunks: List[Dict[str, Any]],
     relevant_keywords: List[str],
+    min_keyword_matches: int = 1,
 ) -> float:
+    """
+    Calculate the fraction of retrieved chunks containing
+    at least min_keyword_matches distinct relevant keywords.
+
+    This is a keyword-based proxy for relevance, not a
+    semantic assessment of whether a chunk answers a question.
+    """
+
+    if not retrieved_chunks:
+        return 0.0
+
+    if min_keyword_matches < 1:
+        raise ValueError("min_keyword_matches must be at least 1")
+
+    normalized_keywords = {
+        normalize_text(keyword)
+        for keyword in relevant_keywords
+        if normalize_text(keyword)
+    }
+
+    relevant_count = 0
+
+    for chunk in retrieved_chunks:
+        content = normalize_text(
+            chunk.get("text", chunk.get("content", ""))
+        )
+
+        matches = sum(
+            1
+            for keyword in normalized_keywords
+            if keyword in content
+        )
+
+        if matches >= min_keyword_matches:
+            relevant_count += 1
+
+    return relevant_count / len(retrieved_chunks)
+
     """
     Calculate the fraction of retrieved chunks containing
     at least one relevant keyword.
