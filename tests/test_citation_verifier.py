@@ -110,3 +110,19 @@ def test_evaluator_preserves_original_source_numbers():
     )
 
     assert score == 0.0
+
+
+
+def test_citation_with_wrong_document_name_is_rejected():
+    document = sample_document()
+
+    answer = (
+        "Artificial intelligence recognizes patterns and "
+        "understands language. "
+        "[Source 1: Machine Learning Guide, Page 1]"
+    )
+
+    verified = verify_citations(answer, [document])
+
+    assert verified == []
+

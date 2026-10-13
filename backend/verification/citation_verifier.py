@@ -1,187 +1,151 @@
+
 import re
 
 
 def normalize_text(text):
     """Normalize filenames and titles for comparison."""
-
     text = str(text or "").lower().strip()
-
     text = re.sub(r"\.pdf$", "", text)
-
     text = re.sub(r"[^a-z0-9]+", " ", text)
-
     return " ".join(text.split())
 
 
 def group_documents(documents):
     """
-    Group retrieved chunks using the same
-    filename and page-number logic as prompt_builder.py.
+    Group retrieved chunks by filename and page number.
+    Preserve source ordering to match prompt_builder.py.
     """
-
     grouped_sources = {}
 
     for document in documents:
-
         file_name = document.get("file_name", "")
         page_number = document.get("page_number")
         title = document.get("title") or file_name
 
-        source_key = (
-            file_name.lower(),
-            page_number
-        )
+        source_key = (file_name.lower(), page_number)
 
         if source_key not in grouped_sources:
-
             grouped_sources[source_key] = {
                 "title": title,
                 "file_name": file_name,
                 "page_number": page_number,
-                "texts": []
+                "texts": [],
             }
 
         text = document.get("text", "").strip()
-
         if text:
             grouped_sources[source_key]["texts"].append(text)
-
-    # Preserve the insertion order to match prompt_builder.py.
 
     sources = []
 
     for source_number, source in enumerate(
-        grouped_sources.values(),
-        start=1
+        grouped_sources.values(), start=1
     ):
-
-        combined_text = "\n\n".join(
-            source["texts"]
-        )
-
         sources.append({
             "source_number": source_number,
             "title": source["title"],
             "file_name": source["file_name"],
             "page_number": source["page_number"],
-            "text": combined_text
+            "text": "\n\n".join(source["texts"]),
         })
 
     return sources
 
 
 def verify_citations(answer, documents):
-    """Verify citation numbers, names, pages, and basic evidence overlap."""
+    """
+    Check citation format, source number, filename/title, page,
+    and basic lexical overlap with the cited evidence.
 
+    Lexical overlap is only a heuristic; it does not prove
+    that the source semantically supports the claim.
+    """
     verified_sources = []
 
     if not answer or not documents:
         return verified_sources
 
-    # Recreate the exact ordered source list shown to Gemini.
     sources = group_documents(documents)
-
-    # Matches citations such as:
-    # [Source 1: second.pdf, Page 1]
-    # [Source 2: Example Guide, Page 3]
 
     citation_pattern = re.compile(
         r"\[\s*Source\s+(\d+)\s*:\s*"
         r"(.*?)\s*,\s*Page\s+(\d+)\s*\]",
-        re.IGNORECASE
+        re.IGNORECASE,
     )
 
-    citations = citation_pattern.findall(answer)
+    citations = citation_pattern.finditer(answer)
 
-    # Remove citations before checking evidence overlap.
-
-    answer_without_citations = re.sub(
-        r"\[\s*Source\s+\d+\s*:.*?\]",
-        "",
-        answer,
-        flags=re.IGNORECASE
-    ).lower()
-
-    answer_words = set(
-        re.findall(
-            r"\b[a-zA-Z]{4,}\b",
-            answer_without_citations
+    for citation in citations:
+        source_number_text, source_name, page_number_text = (
+            citation.groups()
         )
-    )
 
-    for source_number, source_name, page_number in citations:
+        source_number = int(source_number_text)
+        source_index = source_number - 1
 
-        source_index = int(source_number) - 1
-
-        # Check that the original source number exists.
-
-        if not (
-            0 <= source_index < len(sources)
-        ):
+        if not 0 <= source_index < len(sources):
             continue
 
         source = sources[source_index]
 
-        # Validate the source title or filename.
-
         cited_name = normalize_text(source_name)
-
         valid_names = {
             normalize_text(source.get("title")),
-            normalize_text(source.get("file_name"))
+            normalize_text(source.get("file_name")),
         }
-
         valid_names.discard("")
 
         if cited_name not in valid_names:
             continue
 
-        # Validate the page number.
-
         actual_page = source.get("page_number")
-
         if actual_page is None:
             continue
 
-        if int(page_number) != int(actual_page):
+        try:
+            if int(page_number_text) != int(actual_page):
+                continue
+        except (TypeError, ValueError):
             continue
 
-        # Check basic word overlap with the cited evidence.
+        # Extract the sentence immediately before this citation.
+        text_before_citation = answer[:citation.start()]
+        sentences = [
+            sentence.strip().lower()
+            for sentence in re.split(
+                r"[.!?\n]+", text_before_citation
+            )
+            if sentence.strip()
+        ]
 
-        source_text = source.get(
-            "text",
-            ""
-        ).lower()
+        claim = sentences[-1] if sentences else ""
 
+        claim_words = set(
+            re.findall(r"\b[a-zA-Z]{4,}\b", claim)
+        )
         source_words = set(
             re.findall(
                 r"\b[a-zA-Z]{4,}\b",
-                source_text
+                source.get("text", "").lower(),
             )
         )
 
-        common_words = source_words.intersection(
-            answer_words
-        )
+        common_words = claim_words.intersection(source_words)
 
+        # Require at least two shared words.
         if len(common_words) < 2:
             continue
 
-        # Preserve the original source number.
         verified_source = {
             "source_number": source["source_number"],
-            "file_name": source.get("file_name")
+            "file_name": source.get("file_name"),
         }
 
         if source.get("title"):
             verified_source["title"] = source["title"]
 
-        if source.get("page_number") is not None:
-            verified_source["page_number"] = (
-                source["page_number"]
-            )
-
-        # Avoid duplicate entries.
+        if actual_page is not None:
+            verified_source["page_number"] = actual_page
 
         if verified_source not in verified_sources:
             verified_sources.append(verified_source)
